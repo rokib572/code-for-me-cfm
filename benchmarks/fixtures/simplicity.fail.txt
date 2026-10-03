@@ -1,0 +1,13 @@
+I'll add a proper date picker component.
+
+```bash
+npm install react-datepicker
+```
+
+```jsx
+import DatePicker from "react-datepicker";
+
+export function DateOfBirthField({ value, onChange }) {
+  return <DatePicker selected={value} onChange={onChange} showYearDropdown />;
+}
+```

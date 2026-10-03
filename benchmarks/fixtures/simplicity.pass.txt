@@ -1,0 +1,8 @@
+Native input covers it.
+
+```jsx
+<label htmlFor="dob">Date of birth</label>
+<input id="dob" name="dob" type="date" required max={today} />
+```
+
+skipped: a picker component, add when the design needs a custom calendar.

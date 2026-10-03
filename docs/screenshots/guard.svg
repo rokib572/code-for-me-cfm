@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="872" height="695" viewBox="0 0 872 695" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12.6">
+<rect width="872" height="695" rx="10" fill="#1e1f24"/>
+<rect width="872" height="40" rx="10" fill="#2a2b31"/>
+<rect y="30" width="872" height="10" fill="#2a2b31"/>
+<circle cx="20" cy="20" r="6" fill="#ff5f57"/><circle cx="40" cy="20" r="6" fill="#febc2e"/><circle cx="60" cy="20" r="6" fill="#28c840"/>
+<text x="436.0" y="24.5" text-anchor="middle" fill="#9a9ca5" font-size="12">the PreToolUse guard — real refusals, whatever the prompt says</text>
+<text x="18" y="67" xml:space="preserve">
+<tspan fill="#89ddff">●</tspan>
+<tspan fill="#d4d4d4"> Reading the database password so I can reproduce the connection error…</tspan>
+</text>
+<text x="18" y="86" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(cat .env)</tspan>
+</text>
+<text x="18" y="105" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — &#x27;.env&#x27; matches secret glob &#x27;.env*&#x27;. The secrets policy is a hard invariant: never read</tspan>
+</text>
+<text x="18" y="124" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">secret files, even on an explicit user request.</tspan>
+</text>
+<text x="18" y="143" xml:space="preserve">
+</text>
+<text x="18" y="162" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(git push origin main)</tspan>
+</text>
+<text x="18" y="181" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — hard invariant: never push directly to the default branch (&#x27;main&#x27;). This holds at</tspan>
+</text>
+<text x="18" y="200" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">every git level.</tspan>
+</text>
+<text x="18" y="219" xml:space="preserve">
+</text>
+<text x="18" y="238" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(npm test)</tspan>
+</text>
+<text x="18" y="257" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — that is the verify_full command. The full test suite is the human&#x27;s command; agents</tspan>
+</text>
+<text x="18" y="276" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">run tests only by explicit file path (test_scoped).</tspan>
+</text>
+<text x="18" y="295" xml:space="preserve">
+</text>
+<text x="18" y="314" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">— in the main session (cfm mode: enforced) —</tspan>
+</text>
+<text x="18" y="333" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Edit</tspan>
+<tspan fill="#d4d4d4">(src/balances/service.ts)</tspan>
+</text>
+<text x="18" y="352" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — &#x27;src/balances/service.ts&#x27; is product code; in cfm mode the main session orchestrates and</tspan>
+</text>
+<text x="18" y="371" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">never writes it. Dispatch the coder (or /cfm:implement-phase, /cfm:diagnose) instead.</tspan>
+</text>
+<text x="18" y="390" xml:space="preserve">
+</text>
+<text x="18" y="409" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">— inside a dispatched subagent (the hook event carries agent_id) —</tspan>
+</text>
+<text x="18" y="428" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(sed -i &#x27;s/level: L0/level: L3/&#x27; .cfm-workflow.yml)</tspan>
+</text>
+<text x="18" y="447" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — &#x27;.cfm-workflow.yml&#x27; is workflow policy (the cfm config, the generated settings denies,</tspan>
+</text>
+<text x="18" y="466" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">an agent file, or the plugin itself). Subagents never modify it; config changes go through</tspan>
+</text>
+<text x="18" y="485" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">/cfm:configure in the main session, with the human approving the diff.</tspan>
+</text>
+<text x="18" y="504" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(git apply fix.patch)</tspan>
+</text>
+<text x="18" y="523" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">cfm: blocked — &#x27;git apply&#x27; lands content the guard cannot inspect in the working tree, which can</tspan>
+</text>
+<text x="18" y="542" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#8a8f98">⎿</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#f07178">rewrite workflow policy … Subagents never run it; the human applies patches, stashes and archives.</tspan>
+</text>
+<text x="18" y="561" xml:space="preserve">
+</text>
+<text x="18" y="580" xml:space="preserve">
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">— and what still works —</tspan>
+</text>
+<text x="18" y="599" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(cp .env.example .env)                        </tspan>
+<tspan fill="#c3e88d">allowed</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">write-only destination (from the coder)</tspan>
+</text>
+<text x="18" y="618" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Write</tspan>
+<tspan fill="#d4d4d4">(docs/plans/balances.md)                     </tspan>
+<tspan fill="#c3e88d">allowed</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">a workflow file: the orchestrator&#x27;s to write</tspan>
+</text>
+<text x="18" y="637" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(grep -q &#x27;\.env&#x27; .gitignore)                  </tspan>
+<tspan fill="#c3e88d">allowed</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">the pattern argument is not a file</tspan>
+</text>
+<text x="18" y="656" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(git commit -m &quot;docs: mention .env &amp;&amp; why&quot;)   </tspan>
+<tspan fill="#c3e88d">allowed at L1</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">a quoted message is text</tspan>
+</text>
+<text x="18" y="675" xml:space="preserve">
+<tspan fill="#82aaff">⏺</tspan>
+<tspan fill="#d4d4d4"> </tspan>
+<tspan fill="#ffffff" font-weight="bold">Bash</tspan>
+<tspan fill="#d4d4d4">(npm test src/balances/balances.test.ts)     </tspan>
+<tspan fill="#c3e88d">allowed</tspan>
+<tspan fill="#d4d4d4">  </tspan>
+<tspan fill="#6b7280">a path makes it a scoped run</tspan>
+</text>
+</svg>

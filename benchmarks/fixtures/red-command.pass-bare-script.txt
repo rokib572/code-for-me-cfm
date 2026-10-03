@@ -1,0 +1,18 @@
+Here is the feedback loop first.
+
+```python
+limiter = RateLimiter(limit=10)
+allowed = 0
+now = 0.0
+for i in range(200):
+    now += 0.05
+    if limiter.allow("k", now):
+        allowed += 1
+print("allowed in window:", allowed)
+```
+
+Ran it: `allowed in window: 11`. Red on the reported symptom, deterministic
+across runs.
+
+Now the ranked hypotheses. The likely cause is the stored timestamp being
+rounded while the prune compares against the unrounded clock.

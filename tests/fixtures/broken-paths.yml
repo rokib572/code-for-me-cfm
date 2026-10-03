@@ -1,0 +1,45 @@
+# Breaks doctor check #2: ghost layer path and a missing CLAUDE.md routing
+# target (the exact drift class cfm exists to catch).
+cfm:
+  schema_version: 2
+  requires:
+    surface: claude-code
+
+profile: supervised
+project_context: >
+  Broken-paths fixture.
+
+layers:
+  - { name: api, path: apps/api }
+  - { name: worker, path: apps/worker-that-does-not-exist }
+
+claude_md:
+  layout: router
+  files: [CLAUDE.md, apps/worker-that-does-not-exist/CLAUDE.md]
+
+commands:
+  lint: ["true"]
+  verify_full: "true"
+
+agents:
+  coder:
+    enabled: true
+    purpose: "Implements features"
+    model: claude-sonnet-5
+    tier: implementation
+    autonomy: auto
+    tools: [Read, Write, Edit, Bash]
+    layers: [api]
+  code-reviewer:
+    enabled: true
+    purpose: "Keeps rules-valid.md's reviewer() enforcement live (check #6)"
+    model: claude-fable-5
+    tier: judgment
+    autonomy: auto
+    tools: [Read]
+    layers: [api]
+
+review_gates: []
+
+git:
+  level: L0

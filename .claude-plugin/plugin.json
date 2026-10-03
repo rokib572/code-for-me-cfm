@@ -1,0 +1,30 @@
+{
+  "name": "cfm",
+  "displayName": "Code For Me",
+  "description": "A configurable agentic development workflow for Claude Code: brainstorm, architecture decisions, config, plan, and phase-by-phase implementation with review gates. Requires Claude Code (terminal, IDE, or Desktop Code tab).",
+  "version": "1.0.3",
+  "author": {
+    "name": "Rokib Hassan",
+    "email": "rokib572@gmail.com"
+  },
+  "homepage": "https://github.com/rokib572/code-for-me#readme",
+  "repository": "https://github.com/rokib572/code-for-me",
+  "documentationUrl": "https://github.com/rokib572/code-for-me#readme",
+  "privacyPolicyUrl": "https://github.com/rokib572/code-for-me/blob/main/PRIVACY.md",
+  "supportUrl": "https://github.com/rokib572/code-for-me/issues",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "multi-agent",
+    "orchestration",
+    "code-review",
+    "planning",
+    "implementation",
+    "testing",
+    "security",
+    "guardrails",
+    "human-in-the-loop",
+    "tdd",
+    "debugging"
+  ]
+}

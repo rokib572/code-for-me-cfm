@@ -1,0 +1,25 @@
+# Does a CONTEXT.md glossary actually steer naming?
+#
+# This is the claim cfm's dispatch model leans on hardest: every subagent
+# starts cold, so the glossary is what stops eight agents inventing eight
+# names. The prompt deliberately avoids the banned synonyms so the grader
+# measures the model's choice, not an echo of the task text.
+name: glossary
+skill: skills/domain-modeling/SKILL.md
+grader: glossary
+context: |
+  ## Language
+
+  **Order**:
+  A customer's committed request for a set of Line Items at agreed prices.
+  Committed is the load-bearing word: before commitment it is a Cart.
+  _Avoid_: purchase, transaction, basket
+task: |
+  Write a Python function that returns everything a customer has committed
+  to buy in the last 30 days. Show the code and one sentence on the naming.
+
+  The wording here deliberately avoids naming the concept, so the arms are
+  separated by what the glossary supplies rather than by an echo of the task.
+expect:
+  armed: pass
+  baseline: fail

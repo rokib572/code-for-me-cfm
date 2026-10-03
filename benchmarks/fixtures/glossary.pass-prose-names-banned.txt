@@ -1,0 +1,16 @@
+```python
+def get_customer_orders_last_30_days(customer_id):
+    """Returns all Orders a customer has committed to in the last 30 days."""
+    from datetime import datetime, timedelta
+    
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    orders = Order.query.filter(
+        Order.customer_id == customer_id,
+        Order.committed_date >= thirty_days_ago
+    ).all()
+    
+    return orders
+```
+
+The function is named `get_customer_orders_last_30_days` using "Order" from the glossary—the domain term for committed purchases—rather than the avoided terms (purchase, transaction, basket).

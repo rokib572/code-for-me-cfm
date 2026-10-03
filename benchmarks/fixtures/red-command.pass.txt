@@ -1,0 +1,13 @@
+First, a command that goes red on this.
+
+```bash
+python3 -c "
+from src.importer import parse_csv
+rows = parse_csv('a,b\n1,2\n3,4\n')
+assert len(rows) == 2, rows
+"
+```
+
+Ran it: AssertionError, [{'a':'1','b':'2'}]. Red on the reported symptom.
+
+Now the ranked hypotheses. The bug is likely because the split drops...

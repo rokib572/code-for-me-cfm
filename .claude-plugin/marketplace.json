@@ -1,0 +1,15 @@
+{
+  "name": "code-for-me",
+  "description": "Marketplace for cfm (Code For Me) — a configurable agentic development workflow plugin for Claude Code.",
+  "owner": {
+    "name": "Rokib Hassan",
+    "email": "rokib572@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "cfm",
+      "source": "./",
+      "description": "Code For Me — a configurable agentic development workflow plugin. Requires Claude Code."
+    }
+  ]
+}

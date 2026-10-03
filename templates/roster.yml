@@ -1,0 +1,103 @@
+# cfm default agent roster — the single source cfm:init reads during config
+# genesis. Agents are copied into .cfm-workflow.yml only when a matching
+# layer exists (`layers: [any]` matches every layer). Model ids are defaults;
+# init MUST confirm them against the live model list before writing config,
+# and any user can change them later via cfm:configure or a personal
+# .cfm-workflow.local.yml override.
+# Default mapping: architect → fable, reviewers → opus, implementation →
+# sonnet, mechanical → haiku. At dispatch the orchestrator passes the ALIAS
+# (fable/opus/sonnet/haiku — the word inside the id) to the Agent tool.
+# tools: duplicated in agents/<name>.md on purpose — Claude Code enforces
+# the file; the doctor fails when config and file disagree.
+# autonomy: auto = dispatch freely | confirm = approve each dispatch brief |
+# confirm-plan = approve the phase's whole dispatch plan once.
+
+architect:
+  enabled: true
+  purpose: "Design decisions, trade-off analysis, and ADR authoring"
+  model: claude-fable-5
+  tier: judgment
+  autonomy: auto
+  tools: [Read, Grep, Glob, Write]
+  owns_commands: []
+  layers: [any]
+
+coder:
+  enabled: true
+  purpose: "Implements features layer by layer per the phase plan"
+  model: claude-sonnet-5
+  tier: implementation
+  autonomy: auto
+  tools: [Read, Write, Edit, Bash, Grep, Glob]
+  owns_commands: []
+  layers: [any]
+
+e2e-test:
+  enabled: true
+  purpose: "Writes and runs ONLY its own test files, by explicit path, scoped"
+  model: claude-sonnet-5
+  tier: implementation
+  autonomy: auto
+  tools: [Read, Write, Edit, Bash, Grep, Glob]
+  owns_commands: [test_scoped]
+  layers: [any]
+
+code-reviewer:
+  enabled: true
+  purpose: "Reviews logic correctness and plan conformance; skips mechanically-enforced rules"
+  model: claude-opus-5
+  tier: judgment
+  autonomy: auto
+  tools: [Read, Grep, Glob]
+  owns_commands: []
+  layers: [any]
+
+simplicity-check:
+  enabled: true
+  purpose: "Reviews for over-engineering only: duplication, reinvented stdlib, speculative abstractions"
+  model: claude-opus-5
+  tier: judgment
+  autonomy: auto
+  tools: [Read, Grep, Glob]
+  owns_commands: []
+  layers: [any]
+
+security-check:
+  enabled: true
+  purpose: "Audits tenancy scoping, auth, injection, and secret hygiene — mandatory every phase"
+  model: claude-opus-5
+  tier: judgment
+  autonomy: auto
+  tools: [Read, Grep, Glob]
+  owns_commands: []
+  layers: [any]
+
+mechanical-gate:
+  enabled: true
+  purpose: "Sole runner of lint + typecheck; reports PASS/FAIL only; no write tools by design"
+  model: claude-haiku-4-5-20251001
+  tier: mechanical
+  autonomy: auto
+  tools: [Read, Bash]
+  owns_commands: [lint, lint_arch, typecheck]
+  layers: [any]
+
+code-styling:
+  enabled: true
+  purpose: "Fixes naming, imports, and formatting nits flagged by review"
+  model: claude-haiku-4-5-20251001
+  tier: mechanical
+  autonomy: auto
+  tools: [Read, Edit, Grep, Glob]
+  owns_commands: []
+  layers: [any]
+
+ui-design:
+  enabled: true
+  purpose: "Frontend component design and implementation"
+  model: claude-sonnet-5
+  tier: implementation
+  autonomy: auto
+  tools: [Read, Write, Edit, Bash, Grep, Glob]
+  owns_commands: []
+  layers: [web, frontend, ui, app]   # activates only if one of these layer names exists

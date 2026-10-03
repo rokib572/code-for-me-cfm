@@ -1,0 +1,8 @@
+# A .cfm-workflow.local.yml that oversteps: git level and review gates are
+# team decisions, not personal overrides. Breaks doctor check #1.
+git:
+  level: L3
+review_gates: []
+agents:
+  coder:
+    model: claude-haiku-4-5

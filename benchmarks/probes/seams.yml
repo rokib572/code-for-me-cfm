@@ -1,0 +1,19 @@
+# Does skills/testing produce a test worth keeping?
+#
+# Two failure shapes the discipline names: mocking an internal collaborator
+# (implementation-coupled) and recomputing the expected value the way the
+# code does (tautological). An unarmed agent commonly does one of them.
+name: seams
+skill: skills/testing/SKILL.md
+grader: seams
+task: |
+  Here is the function under test:
+
+      def cart_total(items, tax_rate):
+          subtotal = sum(i["price"] * i["qty"] for i in items)
+          return round(subtotal * (1 + tax_rate), 2)
+
+  Write one test for it. Show the code.
+expect:
+  armed: pass
+  baseline: fail

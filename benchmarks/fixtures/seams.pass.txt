@@ -1,0 +1,6 @@
+```python
+def test_cart_total_applies_tax_to_line_items():
+    items = [{"price": 10.00, "qty": 2}, {"price": 5.00, "qty": 1}]
+    assert cart_total(items, 0.10) == 27.50
+```
+Worked by hand: 25.00 subtotal, 10% tax, 27.50.

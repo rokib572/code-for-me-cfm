@@ -1,0 +1,9 @@
+The root cause is that `parse_csv` splits on newline and the trailing blank
+line produces an empty final element, which the loop then treats as a
+terminator.
+
+You can confirm with:
+
+```bash
+pytest tests/test_importer.py -k trailing
+```

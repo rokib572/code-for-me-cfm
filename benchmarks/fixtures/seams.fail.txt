@@ -1,0 +1,9 @@
+```python
+from unittest import mock
+
+@mock.patch("cart.sum")
+def test_cart_total(mock_sum):
+    items = [{"price": 10.00, "qty": 2}]
+    expected = sum(i["price"] * i["qty"] for i in items) * 1.1
+    assert cart_total(items, 0.10) == round(expected, 2)
+```

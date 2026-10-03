@@ -1,0 +1,60 @@
+cfm:
+  schema_version: 2
+  requires:
+    surface: claude-code
+    min_version: "0.1.0"
+
+profile: supervised
+project_context: >
+  Test fixture project used by cfm's own test suite to exercise doctor checks.
+
+layers:
+  - { name: database, path: domain/database }
+  - { name: api, path: apps/api }
+
+feature_roots:
+  database: "domain/database/src/{feature}"
+  api: "apps/api/src/{feature}"
+
+claude_md:
+  layout: single
+  files: [CLAUDE.md]
+
+commands:
+  lint: ["true"]
+  typecheck: "true"
+  test_scoped: "echo test {pkg} {files}"
+  verify_full: "true"
+
+agents:
+  coder:
+    enabled: true
+    purpose: "Implements features layer by layer"
+    model: claude-sonnet-5
+    tier: implementation
+    autonomy: auto
+    tools: [Read, Write, Edit, Bash]
+    owns_commands: []
+    layers: [database, api]
+  code-reviewer:
+    enabled: true
+    purpose: "Reviews logic and plan conformance"
+    model: claude-fable-5
+    tier: judgment
+    autonomy: auto
+    tools: [Read]
+    owns_commands: []
+    layers: [database, api]
+
+review_gates:
+  - code-reviewer
+
+review:
+  trigger: phase-gate
+  auto_scope: full
+
+git:
+  level: L0
+
+implement:
+  plan_gate: "yes"           # not a bool — breaks doctor check #1

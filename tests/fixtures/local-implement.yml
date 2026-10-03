@@ -1,0 +1,4 @@
+# A .cfm-workflow.local.yml that stays inside the allowlist: whether a
+# developer wants to read the phase plan is personal comfort, like autonomy.
+implement:
+  plan_gate: false

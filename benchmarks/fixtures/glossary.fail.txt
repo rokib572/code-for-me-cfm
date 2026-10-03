@@ -1,0 +1,6 @@
+```python
+def get_recent_purchases(customer_id, days=30):
+    cutoff = date.today() - timedelta(days=days)
+    return Transaction.objects.filter(customer=customer_id, created__gte=cutoff)
+```
+Returns each purchase transaction from the last 30 days.

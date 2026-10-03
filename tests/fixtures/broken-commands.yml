@@ -1,0 +1,44 @@
+# Breaks doctor check #3: lint executes red, typecheck binary doesn't
+# resolve, and verify_full is missing entirely.
+cfm:
+  schema_version: 2
+  requires:
+    surface: claude-code
+
+profile: supervised
+project_context: >
+  Broken-commands fixture.
+
+layers:
+  - { name: api, path: apps/api }
+
+claude_md:
+  layout: single
+  files: [CLAUDE.md]
+
+commands:
+  lint: ["false"]
+  typecheck: "cfm-no-such-binary-xyz --strict"
+
+agents:
+  coder:
+    enabled: true
+    purpose: "Implements features"
+    model: claude-sonnet-5
+    tier: implementation
+    autonomy: auto
+    tools: [Read, Write, Edit, Bash]
+    layers: [api]
+  code-reviewer:
+    enabled: true
+    purpose: "Keeps rules-valid.md's reviewer() enforcement live (check #6)"
+    model: claude-fable-5
+    tier: judgment
+    autonomy: auto
+    tools: [Read]
+    layers: [api]
+
+review_gates: []
+
+git:
+  level: L0

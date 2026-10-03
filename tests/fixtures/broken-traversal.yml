@@ -1,0 +1,53 @@
+# Breaks path containment: rules_file climbs out of the project with '..'
+# and progress_log is absolute — both must be rejected by cfm_config
+# validation ("must be a relative path inside the project").
+cfm:
+  schema_version: 2
+  requires:
+    surface: claude-code
+    min_version: "0.1.0"
+
+profile: supervised
+project_context: >
+  Traversal fixture.
+
+layers:
+  - { name: database, path: domain/database }
+  - { name: api, path: apps/api }
+
+feature_roots:
+  database: "domain/database/src/{feature}"
+  api: "apps/api/src/{feature}"
+
+claude_md:
+  layout: single
+  files: [CLAUDE.md]
+
+commands:
+  lint: ["true"]
+  typecheck: "true"
+  test_scoped: "echo test {pkg} {files}"
+  verify_full: "true"
+
+agents:
+  coder:
+    enabled: true
+    purpose: "Implements features layer by layer"
+    model: claude-sonnet-5
+    tier: implementation
+    autonomy: auto
+    tools: [Read, Write, Edit, Bash]
+    owns_commands: []
+    layers: [database, api]
+
+review_gates: []
+
+review:
+  trigger: phase-gate
+  auto_scope: full
+
+git:
+  level: L0
+
+rules_file: "../escape/rules.md"
+progress_log: "/tmp/absolute/PROGRESS.md"

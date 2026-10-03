@@ -1,0 +1,6 @@
+```python
+def recent_orders(customer_id, days=30):
+    cutoff = date.today() - timedelta(days=days)
+    return Order.objects.filter(customer=customer_id, committed_at__gte=cutoff)
+```
+Named for the Order, the committed request, rather than the Cart it came from.

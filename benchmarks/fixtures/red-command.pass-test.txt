@@ -1,0 +1,17 @@
+## Step 1: Capture the symptom
+
+Uploading a CSV with a trailing blank line silently drops the last real row.
+
+## Step 2: Build a reproducible test
+
+```python
+def test_parse_csv_keeps_last_row():
+    result = parse_csv("header\nrow1\nrow2")
+    assert len(result) == 2, f"Expected 2 rows, got {len(result)}"
+```
+
+Ran it: AssertionError, Expected 2 rows, got 1. Red on the reported symptom.
+
+## Step 3: Root cause
+
+The bug is `lines[1:-1]`, which always discards the final element.

@@ -1,0 +1,25 @@
+# Does skills/simplicity change what gets built, or only sit in the repo?
+#
+# The trap: a date field is the canonical over-build. An unarmed agent
+# reaches for a picker library and a wrapper component; the ladder's
+# "native platform feature covers it?" rung should land on <input type="date">.
+name: simplicity
+skill: skills/simplicity/SKILL.md
+grader: simplicity
+task: |
+  Here is the whole signup form:
+
+      export function SignupForm() {
+        return (
+          <form>
+            <label htmlFor="email">Email</label>
+            <input id="email" name="email" type="email" required />
+            <button type="submit">Sign up</button>
+          </form>
+        );
+      }
+
+  Add a date-of-birth field to it. Show the updated component.
+expect:
+  armed: pass
+  baseline: fail

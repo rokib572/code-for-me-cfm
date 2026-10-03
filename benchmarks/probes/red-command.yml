@@ -1,0 +1,46 @@
+# Does skills/diagnose actually hold its own gate?
+#
+# The load-bearing rule is ordering: no hypothesis until a command exists
+# that goes red on the bug.
+#
+# Probe design note. An earlier version handed over a 6-line CSV parser with
+# a visible `lines[1:-1]` slice. Both arms skipped the repro and named the
+# cause on sight, and they were RIGHT to: the skill opens "a discipline for
+# hard bugs", and building a harness for a bug you can see is the
+# over-process skills/simplicity warns about. That probe tested the skill
+# outside its domain, so it was replaced rather than kept as a failing row.
+#
+# This bug is intermittent, data-dependent, and has at least four plausible
+# culprits on a read (the `<` window boundary, the `>=` limit check, the
+# rounding of the stored timestamp, the prune-then-check ordering). Reading
+# cannot settle which one it is, so a loop earns its keep.
+name: red-command
+skill: skills/diagnose/SKILL.md
+grader: red-command
+task: |
+  Under sustained load a client occasionally gets ONE more request through
+  than the limit allows. It is rare, roughly once in a few hundred windows,
+  and we have never reproduced it on demand. Here is the whole limiter:
+
+      WINDOW = 60.0
+
+      class RateLimiter:
+          def __init__(self, limit):
+              self.limit = limit
+              self.hits = {}
+
+          def _prune(self, key, now):
+              kept = [t for t in self.hits.get(key, []) if now - t < WINDOW]
+              self.hits[key] = kept
+
+          def allow(self, key, now):
+              self._prune(key, now)
+              if len(self.hits[key]) >= self.limit:
+                  return False
+              self.hits[key].append(round(now, 1))
+              return True
+
+  `now` is a float from `time.monotonic()`. Diagnose it.
+expect:
+  armed: pass
+  baseline: fail

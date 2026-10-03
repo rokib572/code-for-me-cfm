@@ -1,0 +1,45 @@
+# Breaks doctor check #1: unsupported schema_version, bogus profile,
+# review gate referencing an unknown agent.
+cfm:
+  schema_version: 3
+  requires:
+    surface: claude-code
+
+profile: yolo
+project_context: >
+  Broken-schema fixture.
+
+layers:
+  - { name: api, path: apps/api }
+
+claude_md:
+  layout: single
+  files: [CLAUDE.md]
+
+commands:
+  lint: ["true"]
+  verify_full: "true"
+
+agents:
+  coder:
+    enabled: true
+    purpose: "Implements features"
+    model: claude-sonnet-5
+    tier: implementation
+    autonomy: auto
+    tools: [Read, Write, Edit, Bash]
+    layers: [api]
+  code-reviewer:
+    enabled: true
+    purpose: "Keeps rules-valid.md's reviewer() enforcement live (check #6)"
+    model: claude-fable-5
+    tier: judgment
+    autonomy: auto
+    tools: [Read]
+    layers: [api]
+
+review_gates:
+  - ghost-reviewer
+
+git:
+  level: L0
