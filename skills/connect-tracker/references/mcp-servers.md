@@ -99,8 +99,9 @@ AskUserQuestion's option shape), then:
 - **Refuse an embedded credential.** If the URL carries `user:pass@`, or a
   `token` / `api_key` / `access_token` / `key` query parameter, STOP: do
   not run it, do not echo the value back, and tell the user to add that
-  server themselves with the secret as a header or an environment-variable
-  reference (`claude mcp add --transport http <name> <url> --header "Authorization: Bearer $VAR"`).
+  server themselves with `claude mcp add`, keeping the secret in that
+  server's own config (a header or an environment-variable reference),
+  never in the URL or a committed file.
   cfm's secrets policy does not carve out an exception for MCP setup.
 - **Infer the transport** from the URL: a path ending in `/sse` →
   `--transport sse`, anything else → `--transport http`.

@@ -64,6 +64,10 @@ class Skills(unittest.TestCase):
             name = os.path.basename(os.path.dirname(path))
             text = read(path)
             self.assertTrue(text.startswith("---") and "description:" in text.split("---")[1], name)
+            # strict YAML: directory scanners reject what Claude Code's loader tolerates
+            fm = yaml.safe_load(text.split("---")[1])
+            self.assertEqual(fm.get("name"), name, name)
+            self.assertIsInstance(fm.get("description"), str, name)
             if name in REFERENCE_SKILLS:
                 # pure discipline read by Bash-less agents: no step-0 gate
                 self.assertNotIn("require-claude-code.sh", text, name)
@@ -226,8 +230,8 @@ class CfmMode(unittest.TestCase):
         commands = {event: [h["command"] for entry in entries for h in entry["hooks"]]
                     for event, entries in hooks.items()}
         self.assertEqual(set(commands), {"SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"})
-        self.assertTrue(any("session_context.sh SessionStart" in c for c in commands["SessionStart"]))
-        self.assertTrue(any("session_context.sh UserPromptSubmit" in c
+        self.assertTrue(any('session_context.sh" SessionStart' in c for c in commands["SessionStart"]))
+        self.assertTrue(any('session_context.sh" UserPromptSubmit' in c
                             for c in commands["UserPromptSubmit"]))
         for script in ("session_context.sh", "statusline.sh", "guard.sh", "on_stop_review.sh"):
             self.assertTrue(os.access(os.path.join(ROOT, "scripts", script), os.X_OK), script)

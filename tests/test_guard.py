@@ -356,7 +356,7 @@ class PolicyFiles(unittest.TestCase):
                     "git add .", "git commit -m x", "git checkout -b feature/x",
                     "git checkout feature/x", "node scripts/build.js",
                     "sed -n p .cfm-workflow.yml", "cat .claude/settings.json",
-                    "ls .claude/agents", "npx prettier --write .", "eslint --fix .",
+                    "ls .claude/agents", "./node_modules/.bin/prettier --write .", "eslint --fix .",
                     "rm -rf node_modules", "cp x src/y.ts", "sed -i s/a/b/ src/y.ts",
                     "echo x > src/y.ts", "mkdir -p .claude/rules", "git status",
                     "find . -name '*.ts' -exec grep x {} +", "chmod +x scripts/x.sh",
@@ -463,7 +463,7 @@ class OrchestratorRule(unittest.TestCase):
             # execution, reads, unknown heads
             "python3 $CLAUDE_PLUGIN_ROOT/scripts/state.py --project-dir . show",
             "python3 scripts/foo.py src/y.ts", "node scripts/build.js",
-            "bash setup.sh", "npx prettier --check src", "pytest tests/test_x.py",
+            "bash setup.sh", "./node_modules/.bin/prettier --check src", "pytest tests/test_x.py",
             "ruff check src/", "tsc -p apps/api", "tree src", "ls src > /dev/null",
             "cat src/y.ts", "grep -rn foo src/", "sed -n p src/y.ts",
             "awk '{print}' src/y.ts", "yq . package.json", "wc -l src/y.ts",

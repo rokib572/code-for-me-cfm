@@ -1,6 +1,6 @@
 ---
 name: implement-phase
-description: Executes one implementation phase: dispatches the coder per layer, runs scoped tests and the configured review gates, updates the ledgers, and stops at the human gate. Use when the user names work from the plan to build, says "resume" or "keep going" (no argument resumes the in-flight phase from state, even in a fresh session), or names a tracker ticket to implement.
+description: 'Executes one implementation phase: dispatches the coder per layer, runs scoped tests and the configured review gates, updates the ledgers, and stops at the human gate. Use when the user names work from the plan to build, says "resume" or "keep going" (no argument resumes the in-flight phase from state, even in a fresh session), or names a tracker ticket to implement.'
 compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code tab)
 ---
 

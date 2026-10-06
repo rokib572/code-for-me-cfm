@@ -2,7 +2,7 @@
   "name": "cfm",
   "displayName": "Code For Me",
   "description": "A configurable agentic development workflow for Claude Code: brainstorm, architecture decisions, config, plan, and phase-by-phase implementation with review gates. Requires Claude Code (terminal, IDE, or Desktop Code tab).",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": {
     "name": "Rokib Hassan",
     "email": "rokib572@gmail.com"

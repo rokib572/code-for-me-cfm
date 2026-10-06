@@ -4,7 +4,7 @@
 
 # cfm: Code For Me
 
-[![version](https://img.shields.io/badge/cfm-1.0.3-blue)](.claude-plugin/plugin.json)
+[![version](https://img.shields.io/badge/cfm-1.0.4-blue)](.claude-plugin/plugin.json)
 [![license](https://img.shields.io/badge/license-MIT-green)](#license)
 [![requires](https://img.shields.io/badge/requires-Claude_Code-8A2BE2)](https://code.claude.com)
 [![tests](https://img.shields.io/badge/tests-182_offline-brightgreen)](tests/)
