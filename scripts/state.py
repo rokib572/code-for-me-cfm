@@ -15,7 +15,7 @@ Usage: python3 state.py [--project-dir DIR] <command> [options]
   init      --id ID --description TEXT --layers L... [--plan PATH]
   dispatch  --agent A [--layer L]
   record    --agent A --purpose TEXT --model M [--layer L] [--total N]
-            [--input N] [--output N] [--duration-ms N] [--files F...]
+            [--input N] [--output N] [--duration-ms N] [--usage BLOCK] [--files F...]
             [--tests-written T...] [--tests-passed T...]
   gate      --agent A --verdict pass|fail [--layer L]
   rollback  --layer L --to coder-pending|tests-pending
@@ -41,6 +41,7 @@ import copy
 import datetime
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -304,8 +305,23 @@ def cmd_dispatch(state, args, config):
             _layer(state, args.layer)["coder"] = "dispatched"
 
 
+def _usage_tag(text, *tags):
+    for tag in tags:
+        m = re.search(rf"<{tag}>\s*(\d+)\s*</{tag}>", text or "")
+        if m:
+            return int(m.group(1))
+    return None
+
+
 def cmd_record(state, args, config):
     _require_phase(state)
+    # a background agent's usage arrives in its task-notification <usage>
+    # block; explicit flags win over what it carries
+    if args.usage:
+        if args.total is None:
+            args.total = _usage_tag(args.usage, "subagent_tokens", "total_tokens")
+        if args.duration_ms is None:
+            args.duration_ms = _usage_tag(args.usage, "duration_ms")
     if args.layer:
         layer = _layer(state, args.layer)
         state["cursor"]["current_layer"] = args.layer
@@ -546,6 +562,8 @@ def build_parser():
     p.add_argument("--output", type=int, default=None)
     p.add_argument("--total", type=int, default=None)
     p.add_argument("--duration-ms", type=int, default=None)
+    p.add_argument("--usage", default=None,
+                   help="the <usage> block from the agent's task-notification, verbatim")
     p.add_argument("--finished", default=None)
     p.add_argument("--files", nargs="*", default=[])
     p.add_argument("--tests-written", nargs="*", default=[])

@@ -22,7 +22,7 @@ file is being rejected).
 |---|---|
 | phase starts | `init --id <id> --description "<text>" --layers <a> <b> [--plan <path>]` |
 | dispatch sent | `dispatch --agent <name> --layer <layer>` |
-| dispatch result | `record --agent <name> --layer <layer> --purpose "<text>" --model <id> [--total N --input N --output N --duration-ms N] [--files ...] [--tests-written ...] [--tests-passed ...]` |
+| dispatch result | `record --agent <name> --layer <layer> --purpose "<text>" --model <id> [--usage BLOCK] [--total N --input N --output N --duration-ms N] [--files ...] [--tests-written ...] [--tests-passed ...]` |
 | gate verdict | `gate --agent <reviewer> --verdict pass\|fail [--layer <layer>]` |
 | reconciliation rollback | `rollback --layer <layer> --to coder-pending\|tests-pending` |
 | deferred obligation | `carry "<text>" ...` |
@@ -105,7 +105,9 @@ token entry) · `gate` · `complete`. A crash between boundaries loses at
 most one step, and reconciliation catches even that.
 
 `record` takes only the token and duration numbers the platform ACTUALLY
-returned for that subagent. When a field is not reported (e.g. the
+returned for that subagent. For a background agent those arrive in its
+task-notification's `<usage>` block — record after that notification, not
+on the handback message, and pass the block as `--usage`. When a field is not reported (e.g. the
 input/output split), omit the flag — the ledger stores `null` and
 `report` marks the affected total with "+". NEVER estimate or invent
 counts.

@@ -7,7 +7,7 @@
 [![version](https://img.shields.io/badge/cfm-1.0.3-blue)](.claude-plugin/plugin.json)
 [![license](https://img.shields.io/badge/license-MIT-green)](#license)
 [![requires](https://img.shields.io/badge/requires-Claude_Code-8A2BE2)](https://code.claude.com)
-[![tests](https://img.shields.io/badge/tests-181_offline-brightgreen)](tests/)
+[![tests](https://img.shields.io/badge/tests-182_offline-brightgreen)](tests/)
 
 **[Documentation](#install-in-30-seconds)** · **[Commands](#commands)** · **[Privacy](PRIVACY.md)** · **[Connectors](CONNECTORS.md)** · **[License](#license)**
 
@@ -301,7 +301,7 @@ On a greenfield project, `/cfm:plan` asks once, right after the first plan is ap
 For contributors working on cfm itself. The offline suite makes no model calls and is how you know an edit did not break the guard, the doctor, or the ledger.
 
 ```
-tests/run-tests.sh                 # 181 offline tests: guard, doctor, ledger, scaffold, settings, redaction
+tests/run-tests.sh                 # 182 offline tests: guard, doctor, ledger, scaffold, settings, redaction
 python3 -m unittest tests/test_guard.py -v
 python3 benchmarks/run.py          # behavior probes; spends tokens; see benchmarks/README.md
 python3 docs/screenshots/render.py # re-render the README screenshots

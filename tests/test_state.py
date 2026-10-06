@@ -113,3 +113,18 @@ class Lifecycle(ProjectCase):
         self.assertIn("54.2k+  (in 50.0k+ · out 4.2k+)  2 dispatches", totals)
         self.assertEqual(self.state("validate").returncode, 0)
         self.assert_healthy(self.d)
+
+    def test_record_reads_task_notification_usage(self):
+        self.state("init", "--id", "p1", "--description", "first", "--layers", "api")
+        usage = ("<usage><subagent_tokens>64609</subagent_tokens><tool_uses>21</tool_uses>"
+                 "<duration_ms>174078</duration_ms></usage>")
+        self.state("record", "--agent", "coder", "--layer", "api", "--purpose", "x",
+                   "--model", "claude-opus-5", "--usage", usage)
+        self.state("record", "--agent", "coder", "--layer", "api", "--purpose", "y",
+                   "--model", "claude-opus-5", "--usage", usage, "--total", "100")
+        first, second = self.ledger()["tokens"]["dispatches"]
+        self.assertEqual((first["total_tokens"], first["duration_ms"]), (64609, 174078))
+        self.assertIsNone(first["input_tokens"])
+        self.assertEqual((second["total_tokens"], second["duration_ms"]), (100, 174078))
+        self.assertEqual(self.ledger()["tokens"]["phase_total"], 64709)
+        self.assertIn("64.6k  (in — · out —)  claude-opus-5 · 2m 54s", self.state("report").stdout)

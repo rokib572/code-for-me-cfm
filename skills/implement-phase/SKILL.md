@@ -181,15 +181,20 @@ For each layer, in order:
    `skills/simplicity/SKILL.md` under the plugin root, the exact file scope,
    and the resolved command slots it owns. Immediately before the
    dispatch: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" dispatch --agent coder --layer <layer>`. After it
-   returns:
+   finishes:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent coder --layer <layer> --purpose "<one line>" --model <config model id> --total <n> --input <n> --output <n> --duration-ms <n> --files <every path it touched>
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent coder --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --files <every path it touched>
    ```
 
-   Pass only the token and duration numbers the platform actually
-   reported — omit a flag rather than estimate it (the ledger stores null
-   and the report marks the total with "+"). Then report tokens to the user.
+   A background agent's numbers arrive only in its **task-notification**,
+   as a `<usage>` block (`<subagent_tokens>`, `<duration_ms>`) — not in the
+   launch result and not in its handback message. Wait for that
+   notification, then pass the block verbatim as `--usage` (or its numbers
+   as `--total`/`--duration-ms`; a foreground result's `total_tokens`
+   counts too). Pass only numbers the platform actually reported — omit a
+   flag rather than estimate it (the ledger stores null and the report
+   marks the total with "+"). Then report tokens to the user.
 2. **Dispatch e2e-test** to write and run tests for that layer's work —
    scoped to its own new test files via `commands.test_scoped`. The brief
    carries the phase's **seams** verbatim from the plan (the public
@@ -200,10 +205,10 @@ For each layer, in order:
    receive briefs as text, so an unexpanded `${CLAUDE_PLUGIN_ROOT}` reaches
    them literally and the Read fails. A plan with no seams line predates
    this field: derive the seams with the user at step 3 and record them in
-   the brief. After it returns:
+   the brief. After its task-notification arrives:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent e2e-test --layer <layer> --purpose "<one line>" --model <config model id> --total <n> --tests-written <paths> --tests-passed <paths>
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent e2e-test --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --tests-written <paths> --tests-passed <paths>
    ```
 3. **Review** — when config `review.scope` is `layer`, run the review
    pipeline now over this layer's touched files (see below). When it is
