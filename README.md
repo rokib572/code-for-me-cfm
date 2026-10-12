@@ -22,8 +22,8 @@ cfm is for engineers who want agents to do the typing without giving up the revi
 **Step 1.** Install **Code For Me** from the Claude plugin directory, or add it from any Claude Code session:
 
 ```
-/plugin marketplace add rokib572/code-for-me
-/plugin install cfm@code-for-me
+/plugin marketplace add rokib572/code-for-me-cfm
+/plugin install cfm@code-for-me-cfm
 ```
 
 Every `/cfm:*` command is available from the next prompt, and updates arrive through the plugin manager. Not sure where to begin? `/cfm:help` explains where to start and lists every command.
