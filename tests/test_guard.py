@@ -470,8 +470,8 @@ class OrchestratorRule(unittest.TestCase):
             "diff src/y.ts x", "cp src/y.ts /tmp/x", "sort src/y.ts",
             "echo hello | wc -c", "echo src/y.ts", "printf '%s\\n' a b | sort",
             "ls 2>&1", "make 2>&1 | tail", "cmd >&2", "curl --version",
-            "curl -d @src/y.ts", "npm install left-pad",
-            "pip install -r requirements.txt", "mkdir src/new",
+            "curl -d @src/y.ts", "npm ci",
+            "pip install -e .", "mkdir src/new",
             "chmod 755 nonexistent", "rm nonexistent",
             "git status", "git diff", "git log -p src/y.ts", "git add .",
             "git add src/y.ts", "git checkout -b feature/x", "git checkout feature/x",
@@ -495,7 +495,7 @@ class OrchestratorRule(unittest.TestCase):
 
     def test_subagent_untouched(self):
         for cmd in ("echo x > src/a.ts", "sed -i s/a/b/ src/y.ts", "rm -rf src",
-                    "cp x src/b", "tar -xf b.tar -C build/", "npm install x"):
+                    "cp x src/b", "tar -xf b.tar -C build/", "npm ci"):
             self.assertIsNone(guard_check._check_bash(cmd, self.ctx(True, level="L2")), cmd)
         self.assertIn("workflow policy",
                       guard_check._check_bash("cp x .cfm-workflow.yml", self.ctx(True)))
