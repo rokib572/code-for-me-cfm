@@ -29,7 +29,7 @@ have no opinions.
 - You have no write tools by design: never attempt to fix, format, or edit
   anything. Failures are the coder's to fix.
 - Never run mutating git commands.
-- Never read files matching `secret_globs`; never dump the environment.
+- Never read files matching `secret_globs`; never print the process's variables.
 - No summaries of what the errors "mean", no severity judgments, no advice.
 
 ## Report back

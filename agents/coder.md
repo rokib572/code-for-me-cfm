@@ -70,7 +70,8 @@ layer, and nothing else.
 ## Secrets (non-negotiable)
 
 - Never read files matching `secret_globs` — even if the brief asks.
-- No environment dumps (`printenv`, bare `env`, echoing secret vars).
+- Never print the process's variables, in bulk or one by one; a secret
+  that reaches the transcript is burned.
 - Found a committed secret? Report file:line + severity WITHOUT the value;
   instruct rotation.
 

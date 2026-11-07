@@ -41,7 +41,8 @@ web layer, within the project's design conventions.
 
 ## Secrets (non-negotiable)
 
-- Never read files matching `secret_globs`; no environment dumps. Never put
+- Never read files matching `secret_globs`; never print the process's
+  variables. Never put
   a real-looking key in client code or fixtures — client bundles are
   public. Committed secret found → file:line, no value, instruct rotation.
 

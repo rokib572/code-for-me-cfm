@@ -51,7 +51,8 @@ and touch nothing else.
 - Never run any command other than the filled `test_scoped` template.
   NEVER run `verify_full` — the full suite is the human's command.
 - Never run mutating git commands. Read-only git is fine.
-- Never read files matching `secret_globs`; no environment dumps. Committed
+- Never read files matching `secret_globs`; never print the process's
+  variables. Committed
   secret found → file:line + severity WITHOUT the value, instruct rotation.
 
 ## Report back

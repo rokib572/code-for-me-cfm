@@ -82,8 +82,10 @@ command's output (`2>&1`), apply the redaction pass in
 
 Show the pass's OUTPUT and nothing else. That document is the single
 source of redaction patterns; carry no pattern list of your own. If the
-pass cannot be completed, show nothing — fail closed. Build loops against environment
-variables so credentials stay in the environment rather than in the text.
+pass cannot be completed, show nothing — fail closed. A loop never
+carries a secret in its command text: a test that needs one reads it
+through the project's own configuration module, the way the product
+does, so nothing secret is typed, captured, or shown.
 If redacted output is genuinely not enough to diagnose the bug, say so and
 ask the user rather than widening what you print.
 

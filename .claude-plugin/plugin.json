@@ -1,7 +1,7 @@
 {
   "name": "cfm",
   "displayName": "Code For Me",
-  "description": "A configurable agentic development workflow for Claude Code: brainstorm, architecture decisions, config, plan, and phase-by-phase implementation with review gates. Markdown, JSON, and YAML only: no code, no hooks, no MCP servers, and it never reads a credential. Requires Claude Code (terminal, IDE, or Desktop Code tab).",
+  "description": "A configurable agentic development workflow for Claude Code: brainstorm, architecture decisions, config, plan, and phase-by-phase implementation with review gates. Ships Markdown, JSON, and YAML only: no code and no hooks. Requires Claude Code (terminal, IDE, or Desktop Code tab).",
   "version": "2.0.2",
   "author": {
     "name": "Rokib Hassan",
