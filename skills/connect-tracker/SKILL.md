@@ -1,17 +1,18 @@
 ---
 name: connect-tracker
-description: Connects a project tracker on demand — Jira, ClickUp, Trello, or a custom MCP server URL — wiring the MCP server, asking the sync flags, and writing tracker config as a diff applied only on approval. Use when the user wants plans and tasks mirrored to a tracker, names one to integrate, or wants the current one disconnected.
+description: Connects a project tracker on demand — Jira, ClickUp, Trello, or any tracker the user has connected themselves — recognising its live tools, asking the sync flags, and writing tracker config as a diff applied only on approval. Use when the user wants plans and tasks mirrored to a tracker, names one to integrate, or wants the current one disconnected.
 compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code tab)
 ---
 
 # cfm:connect-tracker
 
-The canonical tracker connection flow: let the user pick a tracker, wire up
-its MCP server for them, ask the sync flags, then write config with the
-diff → approval → doctor discipline. Jira, ClickUp, and Trello are
-one-click — cfm knows their official MCP endpoints and runs the connection
-itself; anything else connects by URL through the Custom option. This
-skill owns the flow — `cfm:plan` (greenfield, once, after the first plan) and
+The canonical tracker connection flow: let the user pick a tracker, check
+whether its tools are live in this session, hand them the connection step
+when they are not, ask the sync flags, then write config with the
+diff → approval → doctor discipline. cfm never registers or configures
+an MCP server: Jira, ClickUp, and Trello connect through the connectors
+Claude Code already offers, and anything else through the user's own
+connector via the Custom option. This skill owns the flow — `cfm:plan` (greenfield, once, after the first plan) and
 `cfm:configure` (tracker domain) route here instead of duplicating it.
 The markdown plans and tasks stay canonical either way — a tracker adds
 visibility, never capability.
@@ -40,67 +41,55 @@ If `tracker.provider` is set: show the current provider and the four
 connection (continue to step 3), **disconnect** (a `provider: null` diff —
 go straight to step 6; the sync flags keep their values, they are inert
 without a provider), or **leave it as is** (STOP). A disconnect never
-removes the MCP server — that stays for the user to remove if they want
-(`claude mcp remove <name>`); say so in one line.
+touches the connector — that stays for the user to remove in `/mcp` if
+they want; say so in one line.
 
 ## Step 3 — pick the tracker
 
 First, take stock of what is already live: scan the MCP tools available in
 THIS session for tracker-shaped ones (names/descriptions that name a
-tracker product or expose create/update/comment task operations), and run
-`claude mcp list` for servers that are configured but not yet
-authenticated. This is context for the menu, not a gate — an empty result
-is normal and stops nothing.
+tracker product or expose create/update/comment task operations). This is
+context for the menu, not a gate — an empty result is normal and stops
+nothing.
 
 Then ask (AskUserQuestion), always these four options, in this order:
 
 1. **Jira** — Atlassian Rovo MCP server.
 2. **ClickUp** — ClickUp's hosted MCP server.
 3. **Trello Board** — Trello's own MCP server.
-4. **Custom** — any other tracker, connected by MCP server URL.
+4. **Custom** — any other tracker the user has connected, or will connect, themselves.
 
 Mark an option "already connected" in its description when step 3's scan
-found its tools or `claude mcp list` already has its server — the user can
-still pick it; the flow just skips the add. Keep descriptions to one line.
+found its tools — the user can still pick it; the flow just skips the
+hand-off. Keep descriptions to one line.
 
-## Step 4 — connect the MCP server
+## Step 4 — connect the tracker
 
-**You connect the server. The user only signs in.** Do not print a
-`claude mcp add` command for the user to run — running it is this step's
-whole job. The one thing that is genuinely theirs is the OAuth browser
-round-trip at the end.
-
-Read `${CLAUDE_PLUGIN_ROOT}/skills/connect-tracker/references/mcp-servers.md`
-— it holds the built-in endpoints, the add/verify/auth-handoff procedure,
-the custom-URL rules (https-only, credential refusal, transport inference),
-and the failure path. Follow it; never type an endpoint from memory.
+**The user connects; cfm recognises.** cfm registers no MCP server, runs
+no `mcp` command, and never asks for an endpoint, a transport, or a
+credential. Read
+`${CLAUDE_PLUGIN_ROOT}/skills/connect-tracker/references/mcp-servers.md`
+— it holds the built-in provider names, their tool-name prefixes, the
+hand-off text, and the Custom rules. Follow it; never describe a
+connector's configuration from memory.
 
 For **Jira / ClickUp / Trello**:
 
-1. Ask the one scope question (local — recommended, nothing written to the
-   repo — vs project, which writes `.mcp.json`, vs user).
-2. Run the reference's exact command for that provider with the **Bash
-   tool**, now. A permission prompt on that call is normal AND intended —
-   registering an MCP server is never auto-approved, because a stdio
-   server is an arbitrary command. Wait for the user to approve it rather
-   than handing the command over.
-3. Verify with `claude mcp list`. "Not connected yet" in that output is
-   expected before sign-in and is not a failure.
+1. Tools with the provider's prefix are live in this session (a claude.ai
+   connector counts) → already connected; say so in one line.
+2. Otherwise hand off the connection in one short block, per the
+   reference: add the provider's connector from the Anthropic Directory
+   through `/mcp` (or the claude.ai connectors settings), complete the
+   browser sign-in, and expect the tools after a session restart.
 
-Skip the add — and say why in one line — when the provider's tools are
-already live in this session (a claude.ai connector counts) or
-`claude mcp get <server-name>` exits 0. Already connected is a success,
-not a reason to add a second server.
+For **Custom**: ask only for the provider name, derive and confirm the
+slug, and scan for its tools. Absent → the same hand-off, naming their
+own connector. A pasted URL, command, or setup value is not acted on and
+not echoed back; point them to `/mcp`.
 
-For **Custom**: ask for the URL in plain conversation, validate it against
-the reference's rules, confirm the derived server name, then add it the
-same way — with the Bash tool, not as a suggestion.
-
-Report the outcome in at most three lines: what was added (or was already
-there), and the OAuth hand-off — `/mcp` in this session to sign in, tools
-appear once auth completes. Then continue to step 5 regardless of whether
-the add succeeded; a provider with no live tools is recorded and degrades
-to the offline warning, it never blocks.
+Report the outcome in at most two lines: connected, or how to connect.
+Then continue to step 5 regardless; a provider with no live tools is
+recorded and degrades to the offline warning, it never blocks.
 
 ## Step 5 — sync flags
 
@@ -197,9 +186,7 @@ the default selection:
 ## Hard limits
 
 - Never touch git; never write product files.
-- The only writes: the MCP server registration from step 4 (at the scope
-  the user picked — `.mcp.json` ONLY when they chose project scope), the
-  approved config diff, the `permissions.allow` entries of step 6.3b,
+- The only writes: the approved config diff, the `permissions.allow` entries of step 6.3b,
   the ledger through the operations in `references/state.md` only (the
   deferred-question outcome and the tracker fields), the binding lines
   added to plan files by step 6's backfill, and — only after approval —
@@ -211,10 +198,10 @@ the default selection:
   never worth it.
 - The backfill adds binding lines to plans; it never edits a plan's
   phases, goals, or criteria. Plan content changes belong to `/cfm:plan`.
-- Never ask for, accept, echo, or store a tracker credential. The built-in
-  providers are OAuth-only; a custom URL carrying a token is refused, not
-  redacted (see the reference's custom-URL rules).
-- Never run `claude mcp login` from a tool call — the browser round-trip
-  is the user's, via `/mcp`. This applies to `login` ONLY: `claude mcp
-  add`, `get`, `list`, and `remove` are non-interactive and are yours to
-  run. Telling the user to add the server by hand is a bug in this skill.
+- Never ask for, accept, echo, or store a tracker credential, endpoint,
+  or setup value. The built-in providers are OAuth-only through their
+  connectors; a pasted value is dropped, not redacted.
+- Never run an `mcp` command of any kind — registering, listing,
+  removing, or signing in to a server is the user's own step through
+  `/mcp`. Telling the user how to connect is this skill's job, not a
+  fallback.

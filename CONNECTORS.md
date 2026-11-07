@@ -4,8 +4,9 @@ cfm's tracker integration is **category-based**: it targets "a project
 tracker", not one vendor. Any tracker reachable through your MCP
 connectors works — Jira, ClickUp, Trello, Linear, GitHub Issues, Asana,
 or anything else that exposes create/update/comment tools over MCP.
-Jira, ClickUp, and Trello additionally get a one-click path: cfm knows
-their official MCP endpoints and connects them for you.
+Jira, ClickUp, and Trello are the built-in providers: their connectors
+are listed in the Anthropic Directory, and cfm tells you how to add one
+and recognises its tools once you have.
 
 Two audiences share this file: Part 1 is for you, the developer. Part 2
 is the contract cfm skills follow when they talk to a tracker.
@@ -25,25 +26,23 @@ How to connect:
 
    | Option | What happens |
    |---|---|
-   | **Jira** | cfm connects Atlassian's Rovo MCP server (`https://mcp.atlassian.com/v2/mcp`) for you |
-   | **ClickUp** | cfm connects ClickUp's hosted MCP server (`https://mcp.clickup.com/mcp`) |
-   | **Trello Board** | cfm connects Trello's MCP server (`https://mcp.trello.com/v1`) |
-   | **Custom** | you paste any other tracker's MCP server URL and cfm connects that |
+   | **Jira** | the Atlassian (Rovo) connector from the Anthropic Directory, which you add through `/mcp` |
+   | **ClickUp** | the ClickUp connector, the same way |
+   | **Trello Board** | the Trello connector, the same way |
+   | **Custom** | any other tracker whose connector you have added yourself |
 
-   You choose the scope — `local` (default; nothing written into the
-   repo), `project` (writes `.mcp.json`, so the whole team gets it), or
-   `user`. cfm then writes `tracker.provider` to `.cfm-workflow.yml` with
-   the usual diff-then-apply discipline. On a greenfield project only,
+   cfm registers no server and asks for no endpoint: it checks whether
+   the tracker's tools are live in the session and, if not, tells you how
+   to add the connector. cfm then writes `tracker.provider` to
+   `.cfm-workflow.yml` with the usual diff-then-apply discipline. On a greenfield project only,
    `/cfm:plan` offers this once, right after the first plan is approved;
    existing repos are never auto-asked. The tracker domain of
    `/cfm:configure` routes to the same flow.
-2. **Sign in.** All three built-in servers use OAuth in the browser — run
-   `/mcp` in your session, pick the server, approve. cfm never asks you to
-   paste a token; a custom URL with a credential baked into it is
-   refused, not accepted quietly. cfm never reads, stores, or forwards a
-   credential for any server: a server that needs one is set up by you,
-   outside cfm, through `/mcp`. If a setup guide tells you to put a token
-   in a committed file, don't.
+2. **Sign in.** All three built-in connectors use OAuth in the browser —
+   run `/mcp` in your session, pick the connector, approve. cfm never
+   asks you to paste a token, a URL, or any setup value, and never reads,
+   stores, or forwards a credential for any server. If a setup guide
+   tells you to put a token in a committed file, don't.
 3. **Tune the sync flags** in `.cfm-workflow.yml` if you want less
    than everything:
 
@@ -66,9 +65,9 @@ How to connect:
    With `fetch_tasks` on, `/cfm:implement-phase PROJ-142` pulls a ticket
    out of the tracker and turns it into a local task file to implement.
 
-The endpoints, the add/verify/auth procedure, and the custom-URL rules
-live in `skills/connect-tracker/references/mcp-servers.md` — that file is
-the single source, so nothing types a URL from memory.
+The provider names, tool prefixes, and the hand-off procedure live in
+`skills/connect-tracker/references/mcp-servers.md` — that file is the
+single source, so nothing describes a connector from memory.
 
 **Permission prompts.** Connecting writes allow rules into
 `.claude/settings.json` (per the allow procedure in
@@ -89,15 +88,14 @@ diff) so routine tracker work runs unattended — but only for the
 ```
 
 Never a server wildcard: `mcp__atlassian__*` would also auto-approve every
-Confluence and Bitbucket write the Rovo server exposes. And never
-`claude mcp add`: a stdio server is an arbitrary command Claude Code
-launches, so registering a server stays a one-time prompt — approving that
-Bash call is your consent. Deny rules always beat allow rules, so none of
-this widens the secret-file or forbidden-git denies. Two things prompt
-on purpose: the server registration, and any bulk backfill, which asks
-once before its first call. The redaction pass prompts for nothing — it
-is applied by Claude in the session, not by a command. The doctor warns
-when a wildcard or an `mcp add` allow appears.
+Confluence and Bitbucket write the Rovo server exposes. And never an
+allow for registering servers from the shell: cfm registers none, and an
+agent that could would be launching an arbitrary command. Deny rules
+always beat allow rules, so none of this widens the secret-file or
+forbidden-git denies. One thing prompts on purpose: any bulk backfill,
+which asks once before its first call. The redaction pass prompts for
+nothing — it is applied by Claude in the session, not by a command. The
+doctor warns when a wildcard or a server-registration allow appears.
 
 Disconnecting is just setting `provider: null`. Nothing else changes —
 the plan files were canonical all along.
