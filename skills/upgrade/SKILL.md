@@ -104,9 +104,9 @@ The plan in step 3 follows the same order.
   from `package.json`. Never propose a script just because it exists.
 - **doctor**: every baseline FAIL and WARN not covered above. Name the
   fix and the command that owns it (`/cfm:configure <domain>`,
-  `/cfm:add-agent`, `/cfm:connect-tracker`). These are fixed through
+  `/cfm:add-agent`). These are fixed through
   those flows and never edited from here.
-- **settings**: missing or stale denies and allows from the check, and
+- **settings**: missing or stale denies from the check, and
   the retired `statusLine` entry when it points into the plugin.
 - **scaffold**: every `would-write` line (missing workflow files and
   `.gitignore` lines). Existing files are never touched.

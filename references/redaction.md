@@ -1,39 +1,34 @@
 # Redaction reference
 
-Everything that leaves the repo — a tracker title, body, comment, label,
-a phase-gate note, a diagnose loop's output shown in the transcript —
-passes through this pass first. It is the single source of the redaction
+Every command output `/cfm:diagnose` shows in the transcript — a failing
+test's message, a stack trace, a probe's log line — passes through this
+pass first. It is the single source of the redaction
 rules: apply it by hand, exactly as written, and send only the result.
 Nothing else may carry a rule list of its own. The policy is DROP, not
 truncate: a match becomes the literal text `[redacted]`, and no step of
 the pass ever quotes the matched content back — not in a warning, not in
 a count, not in a question to the user.
 
-**What this pass is, and is not.** It operates only on text the
-orchestrator has already drafted from the project's markdown (plan and
-task files, progress notes, acceptance criteria) for a tracker the user
-connected themselves. It takes no other input: nothing is looked up,
+**What this pass is, and is not.** It operates only on output a command
+has already produced. It takes no other input: nothing is looked up,
 opened, or collected to feed it. Its one job is to make sure that a
-secret someone pasted into a plan by accident is dropped before the
-payload leaves the machine. It never forwards or stores one.
+secret a test or log happens to print is dropped before it enters the
+transcript. It never forwards or stores one, and nothing is sent off the
+machine.
 
-**Used by:** `/cfm:plan`, `/cfm:create-task`, `/cfm:implement-phase`,
-`/cfm:connect-tracker`, `/cfm:diagnose`, and the adapter contract in
-`CONNECTORS.md` Part 2.
+**Used by:** `/cfm:diagnose`.
 
 ## Fail closed
 
-If the pass cannot be completed — the payload is too long to read in
-full, a family cannot be applied with confidence, the result cannot be
-shown — post NOTHING for that payload. Emit a one-line local warning and
-continue the workflow; the markdown files are canonical and a missed sync
-is never a blocker. When unsure whether a string is a secret, drop the
-whole paragraph and note `[redacted]`. Never post the unredacted draft
-"just this once".
+If the pass cannot be completed — the output is too long to read in
+full, a family cannot be applied with confidence — show NOTHING of that
+output. Emit a one-line warning and continue. When unsure whether a
+string is a secret, drop the whole paragraph and note `[redacted]`.
+Never show the unredacted output "just this once".
 
 ## The pass, step by step
 
-1. Draft the payload in full before redacting anything.
+1. Capture the output in full before redacting anything.
 2. Apply the families below **in the order listed** — whole blocks first,
    vendor-shaped strings, then headers and URLs, then the keyed-value
    forms last (quoted-JSON before colon forms). Later families see the
@@ -42,14 +37,9 @@ whole paragraph and note `[redacted]`. Never post the unredacted draft
 3. For every keyed-value match, run the exemption check before replacing.
    An exempt value stays byte-identical and is not counted.
 4. Count each real replacement by family name.
-5. If any count is non-zero, show the user the redacted result (never
-   the draft) before the tracker call, in the form
-   `redacted N match(es): <family> (n), <family> (n)`.
-6. Send only the redacted text. In the tracker bookkeeping line
-   (the `tracker` operation's `last_sync` value in `references/state.md`)
-   append the total, e.g. `last_sync: "ok (2 redacted)"`; `"ok"` alone
-   means zero.
-7. The pass is idempotent: running it again on its output changes
+5. Show only the redacted result. If any count is non-zero, follow it
+   with `redacted N match(es): <family> (n), <family> (n)`.
+6. The pass is idempotent: running it again on its output changes
    nothing. If a second pass would change something, the first was wrong
    — redo it.
 
@@ -118,7 +108,7 @@ know, rather than guessing from the look of a string.
 2. **pem-block-truncated** — a PEM `BEGIN` marker with no `END`, when
    EITHER the label names a private key, OR one of the next two lines
    starts (after optional whitespace) with 40 or more base64 characters.
-   Drop from the marker to the END OF THE PAYLOAD. A sentence that
+   Drop from the marker to the END OF THE OUTPUT. A sentence that
    merely mentions a certificate marker, followed by ordinary prose,
    survives.
 3. **jwt** — three base64url segments separated by dots, the first
@@ -240,17 +230,17 @@ The families above do not catch: an `Authorization` header with the
 `Digest` scheme or any scheme other than Bearer, Basic or token; a bare
 lowercase `authorization: <value>` line; a URL whose authority carries a
 user name without a password; a hyphenated assignment key; a colon form
-with no space after the colon. When a drafted payload carries one of
+with no space after the colon. When the output carries one of
 these, drop that paragraph and note `[redacted]` rather than reasoning
 that it slipped the rules.
 
 ## The check (yes/no)
 
-Some skills only need to know whether a payload is clean. Run the full
+Some skills only need to know whether an output is clean. Run the full
 pass mentally and count real replacements (exempt matches do not count):
 
 - Any count > 0 → **dirty**. Report only family names and counts
   (`would redact 2: aws-access-key-id (1), keyed-colon-value (1)`), never
   the matched text; then drop the doubtful paragraph and note `[redacted]`.
 - Zero → **clean**. Text that already contains `[redacted]` is clean; an
-  empty payload is clean.
+  empty output is clean.

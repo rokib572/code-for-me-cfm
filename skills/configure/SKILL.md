@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Views or changes any cfm configuration value — profile, agents, models, autonomy, review pipeline, git level, command slots, coding conventions, tracker — always as a diff applied only on explicit approval, followed by an automatic doctor run. Use when the user wants a workflow setting or a project coding rule adjusted; this is the sanctioned path, so reach for it rather than hand-editing .cfm-workflow.yml.
+description: Views or changes any cfm configuration value — profile, agents, models, autonomy, review pipeline, git level, command slots, coding conventions — always as a diff applied only on explicit approval, followed by an automatic doctor run. Use when the user wants a workflow setting or a project coding rule adjusted; this is the sanctioned path, so reach for it rather than hand-editing .cfm-workflow.yml.
 compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code tab)
 ---
 
@@ -38,7 +38,7 @@ Otherwise show the menu once: **agents** (roster, models, autonomy, custom
 agents) · **review** (gate order, trigger, scope) · **implement** (phase
 plan gate) · **git** (level, branch prefixes) · **commands** (slots) ·
 **profile** · **claude_md** (layout, files) · **conventions** (coding
-rules, feature structure) · **secrets** (extend globs) · **tracker** ·
+rules, feature structure) · **secrets** (extend globs) ·
 **mode** (cfm mode: enforced / advisory / off).
 
 Domain notes:
@@ -53,9 +53,6 @@ Domain notes:
   table of what each value does, the one-line diff, and the CLAUDE.md
   doctrine re-render. It is a team setting: never route it to
   `.cfm-workflow.local.yml`.
-- **tracker**: follow the connect-tracker skill flow
-  (`/cfm:connect-tracker`), which owns the provider menu (Jira, ClickUp,
-  Trello, Custom), the MCP server connection, sync flags, and disconnect.
 - **conventions**: follow the conventions round
   (`${CLAUDE_PLUGIN_ROOT}/skills/init/references/conventions-round.md`),
   which owns the categories, the rule format, and enforcement assignment.

@@ -8,7 +8,7 @@
 [![license](https://img.shields.io/badge/license-MIT-green)](#license)
 [![requires](https://img.shields.io/badge/requires-Claude_Code-8A2BE2)](https://code.claude.com)
 
-**[Documentation](#install-in-30-seconds)** · **[Commands](#commands)** · **[Privacy](PRIVACY.md)** · **[Connectors](CONNECTORS.md)** · **[License](#license)**
+**[Documentation](#install-in-30-seconds)** · **[Commands](#commands)** · **[Privacy](PRIVACY.md)** · **[License](#license)**
 
 **A supervised, multi-agent development workflow for Claude Code, where the orchestrator never writes code, every phase ends at a gate only you can cross, and every rule that matters is written down once and checked by a doctor.**
 
@@ -103,7 +103,7 @@ Agents write plausible code quickly. The failure modes are not in the typing; th
 
 > "Trust, but verify."
 
-**The Problem.** "The agent won't push to main" is a hope until something intercepts the push. "The agent won't read `.env`" is a hope until the read is refused even when *you* ask for it, because once a secret enters the transcript it bleeds into progress logs, review reports, and tracker comments.
+**The Problem.** "The agent won't push to main" is a hope until something intercepts the push. "The agent won't read `.env`" is a hope until the read is refused even when *you* ask for it, because once a secret enters the transcript it bleeds into progress logs and review reports.
 
 **The Fix.** Three gates are human-only in every profile: the full test suite, git per your autonomy level, and starting the next phase. The first two are written into your project's `settings.json` as permission deny rules that Claude Code enforces on every session, main and subagent alike: Read, Edit, and Bash denies on every secret glob, Bash denies for every git operation your level does not grant and for the literal shapes of a default-branch or destructive push, and a deny on the exact `verify_full` command. An opt-in second layer enables Claude Code's OS-level sandbox with read denies on every secret glob, which closes the shapes a text rule cannot see. The rules are **owned, not appended**: cfm records what it wrote in `.claude/cfm-denies.json`, retracts a rule the new config no longer requires, keeps every rule you wrote yourself, and the doctor fails on a missing or stale deny.
 
@@ -129,14 +129,13 @@ Commands are **user-invoked**: you type them. Reference skills are **model-invok
 | **[`/cfm:help`](skills/help/SKILL.md)** | Where to start in brief, and every command with a one-line explanation in a table |
 | **[`/cfm:init`](skills/init/SKILL.md)** | Universal entry; detects your scenario (greenfield / existing / scaffolded / adoption), interviews, writes config, scaffolds, writes settings denies, runs doctor |
 | **[`/cfm:brainstorm`](skills/brainstorm/SKILL.md)** `[scope]` | Guided ideation → `docs/brief.md` (product) or a feature brief. Config-free |
-| **[`/cfm:plan`](skills/plan/SKILL.md)** | Feature → phased integration plan in `docs/plans/`; optional tracker sync |
+| **[`/cfm:plan`](skills/plan/SKILL.md)** | Feature → phased integration plan in `docs/plans/` |
 | **[`/cfm:implement-phase`](skills/implement-phase/SKILL.md)** `[id]` | Executes one phase through the agent pipeline; no argument = resume from state |
 | **[`/cfm:code-review`](skills/code-review/SKILL.md)** `[target\|prompt]` | Runs the configured review pipeline over a diff, path, staged, all uncommitted work, or a plain-English scope |
 | **[`/cfm:diagnose`](skills/diagnose/SKILL.md)** `[symptom]` | Bug or perf regression through a gated loop: a feedback loop that goes red on **this** bug → minimise → ranked falsifiable hypotheses → instrument → findings, then offers to plan the fix. Never applies one |
 | **[`/cfm:configure`](skills/configure/SKILL.md)** `[domain]` | View or change any config value or coding convention; every path ends in a diff → explicit apply → automatic doctor |
 | **[`/cfm:add-agent`](skills/add-agent/SKILL.md)** | Adds a custom agent to the roster: name, purpose, model, autonomy, with a YAML diff, a rendered agent file, and a doctor run |
-| **[`/cfm:create-task`](skills/create-task/SKILL.md)** `"<desc>"` | Captures work as `docs/tasks/<slug>.md`; mirrors to tracker if connected |
-| **[`/cfm:connect-tracker`](skills/connect-tracker/SKILL.md)** | Integrates Jira, ClickUp, Trello, or a custom MCP URL; connects the server, sets provider + sync flags via a YAML diff and doctor run |
+| **[`/cfm:create-task`](skills/create-task/SKILL.md)** `"<desc>"` | Captures work as `docs/tasks/<slug>.md` |
 | **[`/cfm:status`](skills/status/SKILL.md)** | Pure read of workflow state: mode, phase, pipeline cursor, pending gates, carried-forward debts |
 | **[`/cfm:mode`](skills/mode/SKILL.md)** `[enforced\|advisory\|off]` | Shows or changes cfm mode (the orchestrator doctrine rendered into CLAUDE.md) as a one-line diff, a re-render, and a doctor run |
 | **[`/cfm:upgrade`](skills/upgrade/SKILL.md)** | After a plugin update or repo change: sweeps config schema, retired and defaulted keys, new roster agents, live model ids, packages the config misses, a CLAUDE.md re-render, settings denies, scaffold, and custom agent files; each change a diff you approve, ending in a doctor run against the baseline |
@@ -155,11 +154,11 @@ The procedures the skills follow, in [`references/`](references/). Each is a ste
 | Document | Covers |
 |---|---|
 | [`config.md`](references/config.md) | Loading and merging `.cfm-workflow.yml` and the local override, every key with its default, the hard invariants, every validation error |
-| [`state.md`](references/state.md) | The `.cfm/state.json` ledger: schema, every operation (open, dispatch, record, gate, rollback, carry, question, tracker, complete, abandon), validation, the token report |
-| [`settings-denies.md`](references/settings-denies.md) | The deny rules derived from the config, ownership and retraction, exact-name tracker allows, the sandbox option |
+| [`state.md`](references/state.md) | The `.cfm/state.json` ledger: schema, every operation (open, dispatch, record, gate, rollback, carry, question, complete, abandon), validation, the token report |
+| [`settings-denies.md`](references/settings-denies.md) | The deny rules derived from the config, ownership and retraction, the sandbox option |
 | [`scaffold.md`](references/scaffold.md) | The CLAUDE.md render including the doctrine block, the rules seed, glossary, `.env.example`, `.gitignore`, progress log, and initial state |
 | [`doctor.md`](references/doctor.md) | Checks 0–9: what each reads, every failure and warning, the report shape |
-| [`redaction.md`](references/redaction.md) | The redaction pass every outbound tracker payload goes through, fail-closed |
+| [`redaction.md`](references/redaction.md) | The redaction pass `/cfm:diagnose` applies to every output it shows, fail-closed |
 | [`scans.md`](references/scans.md) | The init scan (scenario detection), the debt scan, and the sweep for references to disabled agents |
 | [`agent-file.md`](references/agent-file.md) | How a custom agent's `.claude/agents/<name>.md` is rendered and checked for drift |
 | [`upgrade.md`](references/upgrade.md) | The twelve-step sweep behind `/cfm:upgrade` |
@@ -221,7 +220,7 @@ Choices arrive bundled as **profiles**, and every profile value can be changed i
 | 4 | Roster: enabled agents' layers exist, review gates name enabled agents, single-owner command matrix holds, every agent's **file** grants the tools its config claims (the file is what Claude Code enforces; a custom agent without one fails), and nothing still references a disabled agent |
 | 5 | Models: every configured model id still resolves |
 | 6 | Rules: every rule declares an enforcement mechanism; toothless rules rejected |
-| 7 | Secrets: `.gitignore` covers the glob family, `.env.example` has no values, nothing secret is tracked, the generated `settings.json` denies are present (FAIL without them) and none is **stale** from an earlier config (FAIL: a raised git level must retract the old denies or it is silently ineffective), a pre-commit secret scan is present (WARN), no wildcard or `claude mcp add` allow, and whether the OS-level sandbox layer is on |
+| 7 | Secrets: `.gitignore` covers the glob family, `.env.example` has no values, nothing secret is tracked, the generated `settings.json` denies are present (FAIL without them) and none is **stale** from an earlier config (FAIL: a raised git level must retract the old denies or it is silently ineffective), a pre-commit secret scan is present (WARN), and whether the OS-level sandbox layer is on |
 | 8 | Pipeline: the deny layer is present and not stale, the `CLAUDE.md` doctrine block is present and announces the configured mode, and a `pre-commit` review trigger has a hook to fire from |
 | 9 | State: the ledger validates against the schema in `references/state.md`, no orphaned in-flight phase |
 
@@ -243,23 +242,13 @@ Choices arrive bundled as **profiles**, and every profile value can be changed i
 <details>
 <summary><strong>Secrets policy, enforcement in depth, honest limits</strong></summary>
 
-**Secrets policy (hard invariant).** Agents never read secret files: anything matching `secret_globs` (`.env*`, `*.env`, PEM and key files, `id_*` SSH keys, keystores, `.netrc`, `.git-credentials`, `secrets.json`, credentials, tfstate, and more), **even when you explicitly ask them to**. Once a secret enters the transcript it can bleed into progress logs, review reports, and tracker comments; refusing the read is the only reliable prevention. If a committed secret is discovered, cfm reports the finding without ever printing the value, and always instructs rotation.
+**Secrets policy (hard invariant).** Agents never read secret files: anything matching `secret_globs` (`.env*`, `*.env`, PEM and key files, `id_*` SSH keys, keystores, `.netrc`, `.git-credentials`, `secrets.json`, credentials, tfstate, and more), **even when you explicitly ask them to**. Once a secret enters the transcript it can bleed into progress logs and review reports; refusing the read is the only reliable prevention. If a committed secret is discovered, cfm reports the finding without ever printing the value, and always instructs rotation.
 
-**Enforcement in depth.** Every important rule exists as prose *and* a mechanism Claude Code itself enforces. The permission layer: `/cfm:init` writes `settings.json` deny rules (diff, then your approval) derived from the config by [`references/settings-denies.md`](references/settings-denies.md): Read and Edit denies on every secret glob, Bash denies for the common reader heads naming one (`cat *.env*`), the forbidden git operations, the literal shapes of a default-branch or destructive push, and the exact `verify_full` command. The rules are **owned, not appended**: cfm records what it wrote in `.claude/cfm-denies.json`, and a later run retracts the recorded rules the new config no longer requires (raise the git level from L0 to L2 and `Bash(git push:*)` goes away) while every rule you added yourself is kept verbatim, in place; the doctor fails check 7 on a missing or stale deny. The agent layer: tool limits are enforced by the agent files, not by prose; shipped agents carry theirs in the plugin, `/cfm:add-agent` renders one for every custom agent, and reviewers carry no write tool at all. The doctrine layer: the orchestrator rule, the routing table, and the human-only gates are rendered into `CLAUDE.md` and verified by the doctor. The redaction pass in [`references/redaction.md`](references/redaction.md) is applied to every outbound tracker payload, fail-closed: if the pass cannot be completed, nothing is posted. An opt-in sandbox layer (offered by `/cfm:init`, `/cfm:configure` and `/cfm:code-review`) enables Claude Code's Bash sandbox with `denyRead` on every secret glob and `denyWrite` on the config pair, so the operating system enforces the boundary on the running process whatever the command text says.
+**Enforcement in depth.** Every important rule exists as prose *and* a mechanism Claude Code itself enforces. The permission layer: `/cfm:init` writes `settings.json` deny rules (diff, then your approval) derived from the config by [`references/settings-denies.md`](references/settings-denies.md): Read and Edit denies on every secret glob, Bash denies for the common reader heads naming one (`cat *.env*`), the forbidden git operations, the literal shapes of a default-branch or destructive push, and the exact `verify_full` command. The rules are **owned, not appended**: cfm records what it wrote in `.claude/cfm-denies.json`, and a later run retracts the recorded rules the new config no longer requires (raise the git level from L0 to L2 and `Bash(git push:*)` goes away) while every rule you added yourself is kept verbatim, in place; the doctor fails check 7 on a missing or stale deny. The agent layer: tool limits are enforced by the agent files, not by prose; shipped agents carry theirs in the plugin, `/cfm:add-agent` renders one for every custom agent, and reviewers carry no write tool at all. The doctrine layer: the orchestrator rule, the routing table, and the human-only gates are rendered into `CLAUDE.md` and verified by the doctor. The redaction pass in [`references/redaction.md`](references/redaction.md) is applied to every command output `/cfm:diagnose` shows, fail-closed: if the pass cannot be completed, nothing is shown. An opt-in sandbox layer (offered by `/cfm:init`, `/cfm:configure` and `/cfm:code-review`) enables Claude Code's Bash sandbox with `denyRead` on every secret glob and `denyWrite` on the config pair, so the operating system enforces the boundary on the running process whatever the command text says.
 
 **Honest limits.** The permission layer matches tool inputs as text. A Bash deny on `cat *.env*` does not see an interpreter one-liner (`python3 -c "open('.env')"`), a variable (`f=.env; cat $f`), a script file that reads the secret, a symlink to one, or a recursive reader that never names the file (`grep -r SECRET .`, `find . -exec cat {} +`); blocking those would block most legitimate searching, so they stay a documented limit, and the opt-in sandbox is the layer that closes them for Bash. The Read and Edit denies are blunter than a parser: `cat .env.example` is denied under the `.env*` glob, so an agent that needs the example file's names uses `grep '' .env.example`. The `verify_full` deny matches the configured command, not its aliases: if `verify_full` is `npm test`, then `npm run test` or `npx jest` runs the same suite unblocked. The default-branch push denies name the literal shapes (`git push origin main`, `HEAD:main`); a bare `git push` on `main` is caught only by the git level when pushes are not granted. The orchestrator-only rule and the policy-file rule (that a subagent must not rewrite the config, the denies, or the agent files) are doctrine and tool limits, not refusals: the coder has Edit and Bash by design, so a config change made from inside a dispatch reaches you through the diff at the phase gate, not through a block. The doctor itself **executes** the configured `lint`, `lint_arch`, and `typecheck` commands to prove them green, so a `.cfm-workflow.yml` in a repository you just cloned runs whatever those slots say the moment you run `/cfm:doctor` or apply a `/cfm:configure` change. Read the config before trusting it, exactly as you would a `package.json` scripts block. The real rule is still simpler: never put real secrets where an agent works. Use placeholder values locally and keep production credentials out of the repository entirely.
 
-**Tracker permissions are exact, never wildcards.** `/cfm:connect-tracker` auto-approves only the tool names it observed live (`mcp__atlassian__createJiraIssue`, say), never `mcp__atlassian__*` (the Rovo server also exposes Confluence and Bitbucket writes) and it registers no MCP server at all: Jira, ClickUp, and Trello connect through the connectors Claude Code already offers, added by you in `/mcp`. The doctor warns if a wildcard or a server-registration allow appears in `settings.json`.
-
 </details>
-
-## Trackers
-
-cfm can mirror plans and tasks to any project tracker reachable through your MCP connectors. `/cfm:connect-tracker` offers four options: **Jira**, **ClickUp**, **Trello Board**, and **Custom** (any other tracker you have connected yourself). All four connect through the MCP connectors Claude Code already offers, added by you in `/mcp`; the first three are listed in the Anthropic Directory and use OAuth in the browser, so you never paste a token, and cfm itself registers no server. The markdown files stay canonical and everything works fully offline; a tracker adds visibility, never capability. See [CONNECTORS.md](CONNECTORS.md) for setup and the sync contract.
-
-Sync runs in both directions. Connecting backfills **every phase of every plan** in `docs/plans/` as a task and writes each task's key back into the plan file, so the phase↔task binding lives in the markdown and survives a fresh clone. Amending a plan reconciles those tasks: changed phases updated, new phases created, dropped phases commented and closed, never deleted. And with `fetch_tasks` on, work can come the other way: `/cfm:implement-phase PROJ-142` pulls a ticket out of the tracker, turns it into a canonical `docs/tasks/<slug>.md`, and implements it through the normal gates. Fetched ticket text is treated as data, never as instructions: a comment telling an agent to skip a review gate gets quoted to you, not obeyed.
-
-On a greenfield project, `/cfm:plan` asks once, right after the first plan is approved, whether to connect a tracker. Existing repos are never auto-asked: run `/cfm:connect-tracker` whenever you want one.
 
 ## Contributing
 
@@ -273,7 +262,7 @@ A change to a procedure belongs in the matching document under `references/`; a 
 
 ## Privacy
 
-cfm runs entirely on your machine: no server, no account, no telemetry. The only data it ever sends off your machine is optional tracker sync to a tracker you connect yourself, redacted first. See [PRIVACY.md](PRIVACY.md).
+cfm runs entirely on your machine: no server, no account, no telemetry. It sends nothing off your machine. See [PRIVACY.md](PRIVACY.md).
 
 ## License
 

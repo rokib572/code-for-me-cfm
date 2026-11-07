@@ -44,7 +44,7 @@ when its known keys are fixed by cfm:
 
 - top level: `profile mode feature_roots claude_md commands agents
   review_gates review implement git forbidden_ops secret_globs tenancy
-  human_gates done_criteria shared_commands_ack token_reporting tracker
+  human_gates done_criteria shared_commands_ack token_reporting
   rules_file context_file progress_log state_file cfm layers
   project_context`
 - `cfm`: `schema_version requires`; `cfm.requires`: `surface min_version`
@@ -53,8 +53,6 @@ when its known keys are fixed by cfm:
 - `implement`: `plan_gate`
 - `git`: `level branch_prefixes`
 - `tenancy`: `scope_field`
-- `tracker`: `provider sync`; `tracker.sync`: `create_tasks
-  transition_status post_notes fetch_tasks`
 - do NOT walk `feature_roots`, `commands`, `agents`, `layers`: their keys
   are user-named.
 
@@ -79,10 +77,6 @@ claude_md.layout: single     review.trigger: phase-gate
 review.auto_scope: full      review.scope: phase
 implement.plan_gate: true    git.level: L0
 tenancy.scope_field: null    token_reporting: true
-tracker.provider: null       tracker.sync.create_tasks: true
-tracker.sync.transition_status: true
-tracker.sync.post_notes: true
-tracker.sync.fetch_tasks: true
 rules_file: .claude/rules/rules.md
 context_file: CONTEXT.md     progress_log: docs/PROGRESS.md
 state_file: .cfm/state.json
@@ -143,7 +137,7 @@ of the skill, not proposed; it is the developer's to edit.
 ## Step 8 — settings denies
 
 Follow `references/settings-denies.md` as a check (nothing written):
-missing or stale cfm denies and allows are the finding, one row. Apply
+missing or stale cfm denies are the finding, one row. Apply
 after the config is final, with the same sandbox choice as the check.
 
 ## Step 9 — scaffold files

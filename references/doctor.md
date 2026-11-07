@@ -9,7 +9,7 @@ report in the shape below. A check never edits a file: it reports, the user
 or the owning skill fixes, the doctor runs again.
 
 **Used by:** `/cfm:doctor` (the full run), `/cfm:init` (until green),
-`/cfm:configure`, `/cfm:mode`, `/cfm:add-agent`, `/cfm:connect-tracker`
+`/cfm:configure`, `/cfm:mode`, `/cfm:add-agent`
 (automatic run after every applied diff), `/cfm:upgrade` (baseline and
 final run, compared).
 
@@ -369,12 +369,6 @@ and from them `missing` (required, absent from `permissions.deny`) and
   policy-file rules are enforced on command TEXT only (settings denies);
   the sandbox block adds the OS-level layer that closes the interpreter,
   variable and script-file evasions`.
-- Every `permissions.allow` entry: starts with `mcp__` and contains `*` →
-  warning `.claude/settings.json: allow '<rule>' is a wildcard over a whole
-  MCP server — replace it with the exact tool names sync uses`; starts with
-  `Bash(claude mcp add` → warning `.claude/settings.json: allow '<rule>'
-  lets an agent register any MCP server — including a stdio server, which
-  is an arbitrary command — without a prompt; remove it`.
 
 No failures and verified non-empty → note the verified items joined by
 `, `.

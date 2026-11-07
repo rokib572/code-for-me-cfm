@@ -30,7 +30,6 @@ as that document specifies, and `show` is the only way to read it
 | deferred obligation | `carry` — one or more obligations, verbatim |
 | free-form phase note | `note` — key, value |
 | deferred question | `question` — ask <text> / resolve with outcome accepted\|declined; always asked_by <command> |
-| tracker bookkeeping | `tracker` — optional provider, last_sync "ok\|failed: <why>", bind pairs `<plan>#<phase>` → `<provider>:<key>` |
 | phase gate | `complete` (or `abandon`); `complete` with gates `plan-fix` is what `/cfm:diagnose` runs, because a diagnosis leaves no diff for the implementation gates to guard |
 | phase-gate token table | `report` — a pure read of `tokens.dispatches` and `phase`, rendered as the Markdown table in state.md section 5 |
 
@@ -72,11 +71,6 @@ as that document specifies, and `show` is the only way to read it
         "duration_ms": "<n or null>", "finished": "ISO" }
     ]
   },
-  "tracker": {
-    "provider": null,
-    "last_sync": { "outcome": "ok | failed: <one-line reason>", "at": "ISO" },
-    "tasks": { "<plan path>#<phase id>": "<provider>:<task key>" }
-  },
   "notes": { "<key>": "<free-form text a resumed session needs>" },
   "pending_gates": ["run-verify_full", "git-per-level", "next-phase-approval"]
 }
@@ -88,11 +82,6 @@ Review verdicts land in `phase_gates` under config `review.scope: phase`
 (the default — one pipeline run over the whole phase diff after the last
 layer) and in each layer's `gates` under `review.scope: layer`. Whichever
 applies, the other stays empty; resume reads the one the config names.
-
-`tracker.tasks` is a CACHE of the phase↔task bindings, for rendering
-without re-reading every plan. The binding lines in the markdown files are
-the authority (`CONNECTORS.md` Part 2) — on any disagreement, the markdown
-wins and the cache is corrected from it, never the other way around.
 
 `deferred_questions` holds ONE entry per question: `asked_by` is the command
 that owns asking it, `outcome` is `null` until that command asks and then

@@ -17,9 +17,7 @@ Only files inside your project, for example `.cfm-workflow.yml`, `.cfm/state.jso
 
 ## What cfm sends off your machine
 
-**Nothing, by default.** The plugin ships no executable code at all (it is Markdown, JSON, YAML, and one icon), declares no MCP servers, and runs no hooks. Nothing in it can make a network call on its own.
-
-**Optional tracker sync.** If you choose to run `/cfm:connect-tracker`, cfm mirrors plans and tasks to the tracker you pick (Jira, ClickUp, Trello, or a custom MCP server) through the MCP connector you authorize with that vendor's own OAuth. What is sent: phase and task titles, descriptions, acceptance criteria, and progress notes. Before every outbound payload, Claude applies cfm's redaction pass (`references/redaction.md`), which removes tokens, keys, passwords, and other secrets; if the pass cannot be completed, nothing is sent. That data is then handled under the tracker vendor's own privacy policy. You can disconnect at any time with `/cfm:connect-tracker`.
+**Nothing.** The plugin ships no executable code at all (it is Markdown, JSON, YAML, and one icon) and runs no hooks. Nothing in it can make a network call on its own.
 
 **Claude itself.** cfm runs inside Claude Code, so your prompts and the files Claude reads are processed by Anthropic under [Anthropic's privacy policy](https://www.anthropic.com/legal/privacy), exactly as in any Claude Code session. cfm adds no other recipient.
 

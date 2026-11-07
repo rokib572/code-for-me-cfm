@@ -58,10 +58,6 @@ One shared spine everywhere: requirements → architecture decisions → config
    from step 3's dominant conventions — the user confirms or corrects what
    the code already does, and is never asked blind about a convention the
    repo demonstrates.
-7. **Closing summary**: mention `/cfm:connect-tracker` once — it connects
-   a project tracker whenever the user wants plans and tasks mirrored.
-   Existing repos are never auto-asked the tracker question, so do NOT
-   record a deferred tracker question here.
 
 ## Scaffolded repo (skeleton, no real features)
 
@@ -77,9 +73,6 @@ One shared spine everywhere: requirements → architecture decisions → config
 5. **Conventions round** (`conventions-round.md`), abbreviated: pre-fill
    from whatever conventions the scaffold already demonstrates, and ask
    fresh wherever it is silent.
-6. **Closing summary**: mention `/cfm:connect-tracker` once for on-demand
-   tracker integration — the scaffolded path never records a deferred
-   tracker question.
 
 ## Adoption (existing .claude/ setup)
 
@@ -123,6 +116,3 @@ the migration.
    categories the adopted file does not cover, and never restate an
    adopted rule as a new one. If the adopted file covers everything, say
    so and skip the round.
-6. In the closing summary, mention `/cfm:connect-tracker` once for
-   on-demand tracker integration — adoption never records a deferred
-   tracker question.

@@ -3,15 +3,14 @@
 The state file is the machine-readable workflow ledger: which phase is in
 flight, where the per-layer pipeline cursor stands, which review gates have
 a verdict, what every subagent dispatch cost, what was carried forward,
-which configuration questions are still deferred, and how the tracker last
-synced. `/cfm:implement-phase` resumes from it in a fresh session with zero
+and which configuration questions are still deferred. `/cfm:implement-phase` resumes from it in a fresh session with zero
 conversation context, so it is updated at every step boundary and must
 always be schema-valid. Every operation below is a procedure you follow by
 hand with Read, Edit and Write; the field names are unchanged from earlier
 cfm versions, so existing ledgers stay valid.
 
 **Used by:** `cfm:implement-phase`, `cfm:diagnose`, `cfm:status`,
-`cfm:plan`, `cfm:init`, `cfm:connect-tracker`, `cfm:create-task`,
+`cfm:plan`, `cfm:init`, `cfm:create-task`,
 `cfm:code-review`, `cfm:doctor` (check 9), `cfm:upgrade`.
 
 ## 1. Location and lifecycle
@@ -26,8 +25,8 @@ cfm versions, so existing ledgers stay valid.
   {"version": 1, "phase": {"id": null, "status": null}, "deferred_questions": [], "carried_forward": []}
   ```
 
-- **Created** on the first mutating operation (`init` usually; `carry`,
-  `question` and `tracker` also create it, since they need no phase).
+- **Created** on the first mutating operation (`init` usually; `carry`
+  and `question` also create it, since they need no phase).
   Create the parent directory when missing.
 - **Unreadable file = error, never replaced.** Invalid JSON reports
   `invalid JSON at line L column C: <reason>`; a non-object top level reports
@@ -61,9 +60,6 @@ cfm versions, so existing ledgers stay valid.
 | `carried_forward` | string[] | every deferred obligation, verbatim, deduplicated |
 | `tokens.phase_total` | int | sum of every non-null `total_tokens` |
 | `tokens.dispatches[]` | object | see the dispatch entry below |
-| `tracker.provider` | string or null | `jira`, `clickup`, `trello`, custom name, or null |
-| `tracker.last_sync` | object or null | `{outcome: "ok" | "failed: <reason>", at: ISO}` |
-| `tracker.tasks` | object | `"<plan path>#<phase id>": "<provider>:<key>"` — a cache; the plan's binding lines win |
 | `notes` | object | free-form `key: string` the next session needs (diagnose's `red_command`, `hypotheses`, `debug_marker`, `root_cause`, …) |
 | `pending_gates` | string[] | human gates recorded by `complete` |
 
@@ -109,9 +105,7 @@ Annotated example, one layer done, review in progress:
   },
   "files_touched": ["src/db/export.py", "tests/db/test_export.py"],
   "open_questions": [],
-  "deferred_questions": [
-    { "question": "Mirror plans to a tracker?", "asked_by": "cfm:plan", "outcome": null }
-  ],
+  "deferred_questions": [],
   "carried_forward": ["Rate-limit the export endpoint before GA"],
   "tokens": {
     "phase_total": 48210,
@@ -126,7 +120,6 @@ Annotated example, one layer done, review in progress:
         "finished": "2026-11-07T09:23:02Z" }
     ]
   },
-  "tracker": { "provider": null, "last_sync": null, "tasks": {} },
   "notes": {},
   "pending_gates": []
 }
@@ -178,8 +171,8 @@ Inputs: `id`, `description`, `layers` (in the workflow file's order), optional `
    then ensure every named layer, in order.
 4. Reset `files_touched`, `open_questions`, `pending_gates` to `[]` and
    `tokens` to `{"phase_total": 0, "dispatches": []}`.
-5. Keep `carried_forward`, `deferred_questions` and `tracker` as they are;
-   add them when absent (`[]`, `[]`, `{"provider": null, "last_sync": null, "tasks": {}}`).
+5. Keep `carried_forward` and `deferred_questions` as they are; add them
+   when absent (`[]`, `[]`).
    `notes` is also kept, so clear stale keys yourself before a new
    diagnosis.
 
@@ -281,34 +274,6 @@ error. No phase required.
   `outcome` becomes the given value, in place. None → stop with
   `error: no deferred question asked_by '<cmd>'`. Never append a second entry.
 
-### tracker — sync bookkeeping
-
-This section records which project tracker (Jira, ClickUp, Trello, or a
-user-connected one) the plan phases are mirrored to, and which tracker
-task each phase maps to. It configures nothing: no tool, no package
-source, no server. It is a bookmark so a fresh session can find the
-right task again.
-
-Inputs: optional `provider`, `last_sync` outcome text, `bind` pairs. No
-phase required. When the `tracker` object is absent, it starts as
-`{"provider": null, "last_sync": null, "tasks": {}}`.
-
-1. `provider` given: `tracker.provider` becomes that name (the same slug
-   `.cfm-workflow.yml` carries under `tracker.provider`); an empty string
-   means null, which records a disconnect.
-2. `last_sync` given: `tracker.last_sync` becomes
-   `{"outcome": <text>, "at": now}`; the text is `"ok"` or `"failed: <one-line reason>"`.
-3. Each bind is a pair: a plan phase (`<plan path>#<phase id>`) or a
-   task file (`docs/tasks/<slug>.md`), and that item's tracker task key
-   (`<provider>:<key>`). A pair missing either half stops with
-   `error: bind needs a plan phase or task file and a tracker key`. The
-   plan phase or task file becomes a key of `tracker.tasks` whose value is
-   the tracker key, replacing an earlier binding for the same item.
-
-`tracker.tasks` is a cache. The binding lines in the plan and task
-markdown files are the authority; on disagreement correct the cache from
-the markdown, never the reverse.
-
 ### note — a free-form phase note
 
 Inputs: `key`, `value`. *Requires a phase.* `notes.<key>` becomes the value
@@ -370,12 +335,10 @@ apply only when `.cfm-workflow.yml` loads: layer names come from
 | a dispatch is not an object or lacks string `agent` | `tokens.dispatches[<i>]: must name an agent` |
 | `input_tokens`, `output_tokens`, `total_tokens` or `duration_ms` not integer or null | `tokens.dispatches[<i>].<field>: must be an integer or null` |
 | `notes` present and not an object of strings | `notes: must be an object of strings` |
-| `tracker` present but not an object | `tracker: must be an object` |
-| `tracker.tasks` present but not an object | `tracker.tasks: must be an object` |
 
 Values in messages use their JSON spelling in quotes, e.g. `'draft'` or
 `None` for null. Absent optional sections (`cursor`, `tokens`, `notes`,
-`tracker`, `deferred_questions`) are valid; the seed passes.
+`deferred_questions`) are valid; the seed passes.
 
 Doctor check 9 additionally fails with
 `orphaned in-flight phase references missing plan <path>` when an in-flight

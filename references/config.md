@@ -8,7 +8,7 @@ and this document together are the source of truth. Everything a skill
 needs from the config comes through the procedures in the last section.
 
 Used by: `/cfm:init`, `/cfm:configure`, `/cfm:mode`, `/cfm:add-agent`,
-`/cfm:connect-tracker`, `/cfm:upgrade`, `/cfm:doctor` (check 1),
+`/cfm:upgrade`, `/cfm:doctor` (check 1),
 `/cfm:plan`, `/cfm:implement-phase`, `/cfm:code-review`,
 `/cfm:create-task`, `/cfm:diagnose`, and `/cfm:status` (mode line).
 
@@ -76,18 +76,13 @@ be relative and contain no `..` segment.
 | `done_criteria` | list | `[tests-green-scoped, gates-pass, progress-log-updated]` | not validated |
 | `shared_commands_ack` | list | `[]` | command-slot names whose shared ownership the user acknowledged; strings |
 | `token_reporting` | bool | `true` | per-phase token usage reporting |
-| `tracker.provider` | str or null | `null` | provider name (`jira`, `clickup`, `trello`, a custom MCP name) or null = offline; never empty string |
-| `tracker.sync.create_tasks` | bool | `true` | outbound |
-| `tracker.sync.transition_status` | bool | `true` | outbound |
-| `tracker.sync.post_notes` | bool | `true` | outbound |
-| `tracker.sync.fetch_tasks` | bool | `true` | inbound |
 | `rules_file` | str rel | `.claude/rules/rules.md` | coding rules with `**Enforcement:**` lines |
 | `context_file` | str rel | `CONTEXT.md` | project glossary |
 | `progress_log` | str rel | `docs/PROGRESS.md` | phase ledger |
 | `state_file` | str rel | `.cfm/state.json` | workflow state |
 
 Unknown top-level keys are kept, never rejected (the upgrade skill reports
-retired keys; the loader does not).
+retired keys such as the old `tracker` block; the loader does not).
 
 ### 2.1 Command slots (`commands.<slot>`)
 
@@ -270,7 +265,6 @@ paths → `<key>: must be a relative path inside the project`.
 | `secret_globs` | `secret_globs: entries must be non-empty strings, got <repr>` |
 | `forbidden_ops` | `forbidden_ops: entries must be command strings, got <repr>` |
 | `shared_commands_ack` | `shared_commands_ack: entries must be command-slot strings, got <type>` |
-| `tracker.provider` | `tracker.provider: expected str or null, got <type>`; blank → `tracker.provider: must be a provider name or null, not empty` |
 
 Checks on layer names (`feature_roots`, agent `layers`) are skipped when
 `layers` itself failed. Agents are validated after disabled ones are
@@ -321,14 +315,14 @@ the same schema and carry `enabled: true` explicitly.
    `review.*`, `implement.plan_gate`, `git.level`, the four paths.
 
 Validation never mutates either file. Only `/cfm:configure`,
-`/cfm:mode`, `/cfm:add-agent`, `/cfm:connect-tracker`, `/cfm:upgrade`
+`/cfm:mode`, `/cfm:add-agent`, `/cfm:upgrade`
 and `/cfm:init` write config, each as a diff applied on approval.
 
 ### Read one key
 
 Load and validate first — a key read from a config with errors is not
 trustworthy and must not be used. Then walk the dotted path through the effective config:
-`review.trigger`, `agents.coder.model`, `tracker.sync.fetch_tasks`. A
+`review.trigger`, `agents.coder.model`, `git.level`. A
 missing path is "unset" (empty), not an error. Report booleans as
 `true`/`false`, lists as a comma-separated line. A key absent from the
 file resolves to its default (`mode` → `enforced`, `git.level` → `L0`),

@@ -304,7 +304,7 @@ Every item verified before this is done:
       state.md, rendered in full (warning line included) after item 3
       below has marked the phase complete.
 
-   i. **Your next step** — the question in item 5.
+   i. **Your next step** — the question in item 4.
 
 2. Update `PROGRESS.md` (config `progress_log`) with a newest-first entry
    whose **Carried forward** section names every deferred obligation: a
@@ -313,12 +313,7 @@ Every item verified before this is done:
    then `complete` per state.md with gates `plan-fix`.
    A diagnosis leaves no diff, so the implementation gates (`verify_full`,
    git) do not apply; the one pending gate is the user's decision below.
-4. Sync the tracker if one is connected, per the adapter contract in
-   `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`: apply the redaction pass in
-   `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` to every outbound
-   payload and send only its output; if the pass cannot be completed, post
-   nothing. Failure is a one-line warning, never a blocker.
-5. Ask, with the `AskUserQuestion` tool, exactly one question — "Plan a
+4. Ask, with the `AskUserQuestion` tool, exactly one question — "Plan a
    fix for these findings now?" — with two options:
    - **Yes, plan the fix** → invoke the `cfm:plan` skill through the
      `Skill` tool with the argument `fix-<slug>`. Plan reads the

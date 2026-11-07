@@ -14,15 +14,14 @@ approval.
 
 Used by: `/cfm:init` (step 5), `/cfm:configure` (after a git-level,
 secrets or command change), `/cfm:code-review` (settings generation),
-`/cfm:connect-tracker` (allow rules), `/cfm:upgrade` (check, then
-write), `/cfm:doctor` (check 7: missing and stale denies, sandbox gaps,
-wildcard allows).
+`/cfm:upgrade` (check, then write), `/cfm:doctor` (check 7: missing and
+stale denies, sandbox gaps).
 
 ## Files
 
 | File | Role | Shape |
 |---|---|---|
-| `.claude/settings.json` | the project settings Claude Code reads; cfm edits only `permissions.deny`, `permissions.allow` and (opt-in) `sandbox` | JSON object; `permissions` and `sandbox`, when present, must be objects |
+| `.claude/settings.json` | the project settings Claude Code reads; cfm edits only `permissions.deny` and (opt-in) `sandbox`; it never adds an allow | JSON object; `permissions` and `sandbox`, when present, must be objects |
 | `.claude/cfm-denies.json` | the ownership record: the deny list cfm last wrote | `{"deny": ["<rule>", ...]}` — nothing else |
 | `.claude/settings.local.json` | the user's personal file; cfm NEVER writes it, only denies Edit on it | untouched |
 
@@ -235,8 +234,7 @@ On every run, compute three lists against the current settings:
 
 Merge rule for `permissions.deny`: keep every existing entry verbatim
 and in place, dropping only the stale ones; then append the missing
-required rules, sorted. For `permissions.allow`: keep everything, append
-the new names sorted. A deny the user wrote outside cfm's shapes
+required rules, sorted. `permissions.allow` is never touched. A deny the user wrote outside cfm's shapes
 (`Bash(rm -rf /)`, `Read(./secrets/**)`) is never touched, never
 reordered. A user deny that coincides with a cfm shape is kept while
 required and retracted once not required — the layer cannot tell the two
@@ -261,43 +259,12 @@ A check never writes. Report, then exit red or green:
   the schema check own the failure.
 - **stale**: each owned, no-longer-required rule still present — red
   ("the permission layer contradicts the config").
-- **advisory**: requested allows not present — reported, never red; a
-  stale allow list is friction, not a hole.
 - **sandbox** (only when the sandbox is on, or the check was asked with
   it): `enabled` not `true`, or any cfm `denyRead`/`denyWrite` path
   missing — the doctor warns; `/cfm:upgrade` treats it as a finding.
-- **wildcard allows**: any `mcp__...` allow containing `*`, or an allow
-  starting with `Bash(claude mcp add` — warn and name the replacement
-  (exact tool names; remove the mcp-add allow).
 
 Green means: every required deny present, no stale cfm deny, and (when
 on) the sandbox block complete.
-
-## Allows — exact MCP tool names only
-
-Allows are convenience, not enforcement; deny always beats allow. The
-only allows cfm adds are exact tracker tool names the caller OBSERVED
-live in the session — the names the adapter contract actually calls
-(create, update, transition, comment, get, search).
-
-Procedure (`/cfm:connect-tracker` step 3b):
-
-1. Read the names off the live tool list; claude.ai connector tools
-   arrive as `mcp__claude_ai_<server>__<tool>`. Never guess a spelling.
-   Tools not live yet (auth pending) → skip, redo after `/mcp`.
-2. Accept a name only when it matches
-   `^mcp__[A-Za-z0-9_.-]+__[A-Za-z0-9_.-]+$` — `mcp__`, server, `__`,
-   tool, nothing else. One invalid name aborts the whole run before any
-   write; report the offending strings.
-3. Refuse every wildcard: `mcp__atlassian__*` would auto-approve every
-   Confluence and Bitbucket write the Rovo server exposes;
-   `mcp__*__create` approves a tool on every server. Refuse
-   `Bash(claude mcp add *)` — a stdio server is an arbitrary command
-   Claude Code launches. Refuse bare `Bash(python3 *)` or any allow the
-   config does not derive.
-4. Merge into `permissions.allow` (existing kept, new sorted, no
-   duplicates), show the diff, write on approval. Allows are not
-   recorded in the sidecar and are never retracted automatically.
 
 ## Sandbox — the OS-level layer (opt-in)
 
@@ -360,7 +327,7 @@ exact JSON to paste rather than fighting the layer.
    Never clobber a file you cannot parse.
 3. Read the sidecar; absent or unreadable → `[]`.
 4. Derive required, owned, stale; build the proposed document (merge
-   rules above; sandbox block when on or requested; allows when given).
+   rules above; sandbox block when on or requested).
 5. Show a unified diff of the current file against the proposed one and
    list the retractions by name ("retracted 4 stale denies: ..."). Say
    in one line that cfm's recorded rules are retracted and everything

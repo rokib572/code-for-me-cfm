@@ -1,6 +1,6 @@
 ---
 name: status
-description: Shows where the cfm workflow stands — active phase, pipeline cursor, pending human gates, carried-forward debts, deferred config questions, and tracker sync state. A pure read that changes nothing. Use when the user asks what is in flight or what to do next, or picks work back up in a fresh session.
+description: Shows where the cfm workflow stands — active phase, pipeline cursor, pending human gates, carried-forward debts, and deferred config questions. A pure read that changes nothing. Use when the user asks what is in flight or what to do next, or picks work back up in a fresh session.
 compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code tab)
 ---
 
@@ -63,14 +63,7 @@ From the state, present, in this order, skipping empty sections:
    renders nothing; the section keeps skipping when empty.
 5. **Deferred config questions** — progressive-interview questions not yet
    asked, and which command will trigger each.
-6. **Tracker sync** — provider and last sync result, or "offline (markdown
-   plan is canonical)". When the current phase's plan is known, add one
-   line for the binding: the phase's task key from its `- **tracker**:`
-   line in the plan file, and the count of phases in that plan still
-   unbound (those get tasks on the next sync). The plan file is the
-   authority here, not state's `tracker.tasks` cache. Reading is all this
-   step does — never call the tracker from `/cfm:status`.
-7. **Tokens** — when `tokens.dispatches` is non-empty, the phase token
+6. **Tokens** — when `tokens.dispatches` is non-empty, the phase token
    table from section 5 of `references/state.md`, one row per dispatch,
    totals suffixed `+` where a dispatch has no usage. Never estimate a
    missing number; `—` is the honest cell.

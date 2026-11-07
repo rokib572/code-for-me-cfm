@@ -44,16 +44,12 @@ Read `references/scenarios.md` for the chosen playbook before proceeding.
 Rules that apply to every scenario:
 
 - Ask each question exactly ONCE, at the moment its answer first matters.
-  Do not front-load; a question whose answer only matters later (e.g.
-  tracker connection) is DEFERRED: record it in the state ledger with the
+  Do not front-load; a question whose answer only matters later is
+  DEFERRED: record it in the state ledger with the
   `question` operation (ask `<the question>`, `asked_by` = the command
   that will ask it) per `${CLAUDE_PLUGIN_ROOT}/references/state.md` —
   that command resolves the entry in place when it asks (the ask rule
-  never writes a duplicate). The tracker question is deferred
-  this way (`asked_by: cfm:plan`) ONLY on
-  the greenfield path; the existing, scaffolded, and adoption paths never
-  record it — they instead mention `/cfm:connect-tracker` once in init's
-  closing summary.
+  never writes a duplicate).
 - Questions init must resolve now:
   1. **project_context** — draft one paragraph from the scan/brief, ask the
      user to confirm or correct it.

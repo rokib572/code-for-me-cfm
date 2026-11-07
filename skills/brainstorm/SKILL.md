@@ -19,7 +19,7 @@ Claude Code to continue."
 ## The config-free contract
 
 Ask ZERO administrative questions in this skill. No stack, no tooling, no
-git, no agents, no models, no trackers, no file layout. If the user raises
+git, no agents, no models, no file layout. If the user raises
 one ("should I use Postgres?"), note it under **Open questions** as an
 architecture-round item and steer back to the product. Configuration
 happens later, in `/cfm:init`, only if the user chooses to move to

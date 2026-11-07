@@ -49,12 +49,11 @@ Render this table verbatim under the heading **Commands**:
 | `/cfm:implement-phase [id]` | Builds one phase through the agent pipeline and review gates, then stops at your gate. No argument resumes the phase in flight |
 | `/cfm:code-review [target\|prompt]` | Runs the review pipeline over a diff, path, staged or uncommitted work, or a plain-English scope |
 | `/cfm:diagnose [symptom]` | Finds the root cause of a bug or slowdown through a gated loop, then offers to plan the fix. Never applies one |
-| `/cfm:create-task "<desc>"` | Captures work as `docs/tasks/<slug>.md`, mirrored to the tracker if one is connected |
+| `/cfm:create-task "<desc>"` | Captures work as `docs/tasks/<slug>.md` |
 | `/cfm:status` | Shows where the workflow stands: mode, phase, pending gates, carried-forward debts, token usage. Changes nothing |
 | `/cfm:configure [domain]` | Views or changes any config value or coding convention, as a diff you approve, then runs the doctor |
 | `/cfm:mode [enforced\|advisory\|off]` | Shows or changes cfm mode: the doctrine rendered into CLAUDE.md; enforced, advisory, off |
 | `/cfm:add-agent` | Adds a custom agent or specialist reviewer to the roster, with its tool limits in an agent file |
-| `/cfm:connect-tracker` | Connects Jira, ClickUp, Trello, or a custom MCP server so plans and tasks are mirrored there |
 | `/cfm:upgrade` | Brings cfm config, CLAUDE.md guides, settings denies, and scaffold up to the installed plugin and the repo as it is now, as diffs you approve, then runs the doctor |
 | `/cfm:doctor` | Checks that config, repo, agents, models, and environment still agree (checks 0–9, run by hand) |
 
