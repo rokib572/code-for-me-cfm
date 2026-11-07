@@ -74,7 +74,7 @@ task.
   When unsure whether a string is a credential, drop it and note
   `[redacted]`. Record the attempt either way with the `tracker`
   operation in `${CLAUDE_PLUGIN_ROOT}/references/state.md`: last_sync
-  `"ok"` and the bind `docs/tasks/<slug>.md=<provider>:<key>` (or
+  `"ok"` and the bind `docs/tasks/<slug>.md` → `<provider>:<key>` (or
   last_sync `"failed: <reason>"`). Sync failure of any kind → one-line
   warning and done; the file remains canonical.
 - **Not connected**: never ask about connecting one here — that is

@@ -30,7 +30,7 @@ as that document specifies, and `show` is the only way to read it
 | deferred obligation | `carry` — one or more obligations, verbatim |
 | free-form phase note | `note` — key, value |
 | deferred question | `question` — ask <text> / resolve with outcome accepted\|declined; always asked_by <command> |
-| tracker bookkeeping | `tracker` — optional provider, last_sync "ok\|failed: <why>", bind pairs `<plan>#<phase>=<provider>:<key>` |
+| tracker bookkeeping | `tracker` — optional provider, last_sync "ok\|failed: <why>", bind pairs `<plan>#<phase>` → `<provider>:<key>` |
 | phase gate | `complete` (or `abandon`); `complete` with gates `plan-fix` is what `/cfm:diagnose` runs, because a diagnosis leaves no diff for the implementation gates to guard |
 | phase-gate token table | `report` — a pure read of `tokens.dispatches` and `phase`, rendered as the Markdown table in state.md section 5 |
 

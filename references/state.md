@@ -292,13 +292,12 @@ phase required. When the `tracker` object is absent, it starts as
    means null, which records a disconnect.
 2. `last_sync` given: `tracker.last_sync` becomes
    `{"outcome": <text>, "at": now}`; the text is `"ok"` or `"failed: <one-line reason>"`.
-3. Each bind pair names a plan phase or task file on the left and the
-   tracker's task key on the right: `<plan path>#<phase id>=<provider>:<key>`
-   (a task file binds as `docs/tasks/<slug>.md=<provider>:<key>`). Split on
-   the FIRST `=`; a pair with no `=` stops with
-   `error: bind takes '<plan>#<phase>=<provider>:<key>', got '<pair>'`.
-   The left side becomes a key of `tracker.tasks` whose value is the right
-   side, replacing an earlier binding for the same key.
+3. Each bind is a pair: a plan phase (`<plan path>#<phase id>`) or a
+   task file (`docs/tasks/<slug>.md`), and that item's tracker task key
+   (`<provider>:<key>`). A pair missing either half stops with
+   `error: bind needs a plan phase or task file and a tracker key`. The
+   plan phase or task file becomes a key of `tracker.tasks` whose value is
+   the tracker key, replacing an earlier binding for the same item.
 
 `tracker.tasks` is a cache. The binding lines in the plan and task
 markdown files are the authority; on disagreement correct the cache from

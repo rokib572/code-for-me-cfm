@@ -207,7 +207,7 @@ holds (the `show` operation in
   approved: apply it, mention it in one line, do not re-open the approval
   gate. Cache the bindings and the outcome in one `tracker` operation
   (`${CLAUDE_PLUGIN_ROOT}/references/state.md`): provider `<provider>`,
-  last_sync `"ok"`, and one bind `<plan path>#<phase id>=<provider>:<key>`
+  last_sync `"ok"`, and one bind `<plan path>#<phase id>` → `<provider>:<key>`
   per binding written (last_sync `"failed: <reason>"` on failure).
 
 Tracker failure of any kind (connector down, auth error, API rejection)

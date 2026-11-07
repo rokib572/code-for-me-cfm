@@ -186,7 +186,7 @@ the default selection:
    5. After ANY sync attempt, record it in one `tracker` operation
       (`${CLAUDE_PLUGIN_ROOT}/references/state.md`): provider
       `<provider>`, last_sync `"ok"`, and one bind
-      `<plan path>#<phase id>=<provider>:<key>` per binding written
+      `<plan path>#<phase id>` → `<provider>:<key>` per binding written
       (last_sync `"failed: <reason>"` when it failed).
 
    If auth from step 4 is not complete yet, the tools are not live — say

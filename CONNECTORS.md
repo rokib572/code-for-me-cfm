@@ -269,7 +269,7 @@ raw text.
   `tracker` operation in `${CLAUDE_PLUGIN_ROOT}/references/state.md` —
   never by a freehand edit of the state file: provider `<provider>`,
   last_sync `"ok"` (or `"failed: <one-line reason>"`), and a bind
-  `<plan path>#<phase id>=<provider>:<key>` for every binding written,
+  `<plan path>#<phase id>` → `<provider>:<key>` for every binding written,
   so `/cfm:status` renders truthfully.
 - Batch: one task per phase, one comment per phase gate. Never one
   comment per test file, per reviewer, or per dispatch.

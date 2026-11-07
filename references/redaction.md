@@ -138,15 +138,17 @@ know, rather than guessing from the look of a string.
    prefix and a run of 20 or more token characters.
 7. **npm-token** — an npm access token by its documented prefix and
    36 alphanumerics.
-8. **slack-webhook** — a Slack incoming-webhook URL (the `hooks.slack.com`
-   host with its three-part services path). The whole URL is dropped.
+8. **slack-webhook** — a Slack incoming-webhook URL (the vendor's
+   webhook host with its three-part services path). The whole URL is
+   dropped.
 9. **slack-app-token** — a Slack app-level token by its documented
    prefix, a single digit, and a run of 10 or more token characters.
 10. **azure-connection-key** — in an Azure connection string, case-
-    insensitive, at a word boundary: `AccountKey`, `SharedAccessKey`,
-    `SharedAccessSignature` or `sig`, then `=`, then a value up to the
-    next `;` or whitespace. Keep the name and `=`, drop the value. An
-    account name and the endpoint suffix survive.
+    insensitive, at a word boundary: the account-key, shared-access-key,
+    shared-access-signature or short signature field name, then `=`,
+    then a value up to the next `;` or whitespace. Keep the name and
+    `=`, drop the value. An account name and the endpoint suffix
+    survive.
 11. **secret-key-token** — the two-letter `sk` prefix followed by a
     hyphen or underscore and a run of 20 or more token characters, not
     preceded by a letter or digit (so a word that merely ends in those
@@ -184,8 +186,8 @@ know, rather than guessing from the look of a string.
     underscores that contains a key word (no hyphens), optional spaces,
     `=`, optional spaces, then the rest of the line (first char
     non-space). The whole remainder is the value, trailing comment
-    included. Keep up to and including `=`, so the result reads
-    `API_KEY=[redacted]`. A key with nothing after `=` is not a match.
+    included. Keep up to and including `=`; the key stays, the value
+    becomes `[redacted]`. A key with nothing after `=` is not a match.
 20. **keyed-colon-value** — a whole line, case-SENSITIVE shape: optional
     indent, then a key that is EITHER all-lowercase (letters, digits,
     `_`, `-`; first char a lowercase letter) OR all-caps (same set with
@@ -216,15 +218,15 @@ The pass leaves these byte-identical; redacting any of them is a bug in
 the pass, not caution:
 
 - Keys that merely contain a key word as a substring across the letter
-  boundary: `author: rokib`, `AUTHOR=rokib`, `git_author: rokib`,
-  `TOKENIZER=gpt2`, `MAX_TOKENS=auto`, `max_tokens: 4096`.
+  boundary: `author: rokib`, `git_author: rokib`, `max_tokens: 4096`,
+  and their upper-case assignment forms (an author name, a tokenizer
+  name, a maximum token count).
 - Settings named by their last word: `secret_globs: [...]`,
-  `api_key_rotation: monthly`, `TOKEN_URL=https://auth.example.com/token`,
-  `oauth_provider=google`, `token_reporting: true`,
-  `token_reporting=false`, `auth_enabled = true`, `auth_timeout: 30`,
-  `token_expiry_seconds: 3600`.
+  `api_key_rotation: monthly`, a token endpoint URL under a key ending
+  in `_url`, `oauth_provider: google`, `token_reporting: true`,
+  `auth_enabled: true`, `auth_timeout: 30`, `token_expiry_seconds: 3600`.
 - Setting literals as values: `"token_type": "Bearer"`,
-  `auth: required`, `AUTH_METHOD=oauth2`.
+  `auth: required`, `auth_method: oauth2`.
 - Bare variable references: `password: ${DB_VALUE}`, `db-password: ${DB_VALUE}`.
 - Prose with a mixed-case key word: `Secrets: never read them, even on
   request.`, `Password: is stored in the vault`, `The secretary approved
@@ -232,7 +234,7 @@ the pass, not caution:
 - Unrelated colon lines and bare words: `risk-assessment: complete`,
   `retries: 30`, `task_queue_worker_settings_module`, `id: 12345`.
 - Hashes, paths, hosts: a commit hash, `/usr/local/lib/app/module.py`,
-  `db.example.com/app`, `core.windows.net`, a certificate marker
+  `db.example.com/app`, a cloud endpoint suffix, a certificate marker
   mentioned in a sentence.
 
 ## Known gaps — the "when unsure, drop it" rule covers them
