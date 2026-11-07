@@ -9,6 +9,17 @@ truncate: a match becomes the literal text `[redacted]`, and no step of
 the pass ever quotes the matched content back — not in a warning, not in
 a count, not in a question to the user.
 
+**What this pass is, and is not.** It operates only on text the
+orchestrator has already drafted from the project's markdown (plan and
+task files, progress notes, acceptance criteria) for a tracker the user
+connected themselves. It reads no environment variable, no `.env` file,
+no key file, and no credential store: the secret-file patterns in
+`secret_globs` are denied to every session by the generated settings
+rules, so a credential can only ever reach this pass by accident, as a
+string someone pasted into a plan. The pass exists to make sure such a
+string is dropped before the payload leaves the machine; it never
+collects, forwards, or stores one.
+
 **Used by:** `/cfm:plan`, `/cfm:create-task`, `/cfm:implement-phase`,
 `/cfm:connect-tracker`, `/cfm:diagnose`, and the adapter contract in
 `CONNECTORS.md` Part 2.
@@ -156,8 +167,8 @@ what it keeps.
     `'password': 'fakepw99'` → `'password': '[redacted]'`. Works inside a
     one-line object: `{"a": 1, "api_key": "x", "b": 2}`. Unquoted JSON
     values (`"retries": 30`, `"token": null`) are not matched.
-19. **keyed-env-value** — a whole line, case-insensitive:
-    optional indent, optional `export `, key `[A-Za-z0-9_]*<key word>[A-Za-z0-9_]*`
+19. **keyed-assignment-value** — a whole line, case-insensitive:
+    optional indent, an optional leading word `export`, key `[A-Za-z0-9_]*<key word>[A-Za-z0-9_]*`
     (no hyphens), optional spaces, `=`, optional spaces, then the rest of
     the line (first char non-space). The whole remainder is the value,
     trailing comment included. Keep up to and including `=`:
