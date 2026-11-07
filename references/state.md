@@ -169,8 +169,8 @@ Inputs: `id`, `description`, `layers` (in the workflow file's order), optional `
    started: now, completed: null}`.
 3. `cursor` becomes `{current_layer: <first layer>, layers: {}, phase_gates: {}}`,
    then ensure every named layer, in order.
-4. Reset `files_touched`, `open_questions`, `pending_gates` to `[]` and
-   `tokens` to `{"phase_total": 0, "dispatches": []}`.
+4. `files_touched`, `open_questions` and `pending_gates` each become `[]`;
+   `tokens` becomes `{"phase_total": 0, "dispatches": []}`.
 5. Keep `carried_forward` and `deferred_questions` as they are; add them
    when absent (`[]`, `[]`).
    `notes` is also kept, so clear stale keys yourself before a new
@@ -246,7 +246,7 @@ Inputs: `layer`, `to` (`coder-pending` or `tests-pending`). *Requires a phase.*
    `{"written": [], "passed": []}`. `tests-pending`: `tests.passed` becomes
    `[]`; `written` and `coder` stay as they are.
 3. `cursor.current_layer` becomes the layer.
-4. Reset EVERY gate to `"pending"`: each key of `cursor.phase_gates` and each
+4. EVERY gate becomes `"pending"`: each key of `cursor.phase_gates` and each
    key of every layer's `gates`. A verdict on a diff that has since changed
    is not a verdict.
 
