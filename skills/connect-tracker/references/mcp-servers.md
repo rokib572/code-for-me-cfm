@@ -98,10 +98,10 @@ AskUserQuestion's option shape), then:
   `http://127.0.0.1` for a server the user runs themselves.
 - **Refuse an embedded credential.** If the URL carries `user:pass@`, or a
   `token` / `api_key` / `access_token` / `key` query parameter, STOP: do
-  not run it, do not echo the value back, and tell the user to add that
-  server themselves with `claude mcp add`, keeping the secret in that
-  server's own config (a header or an environment-variable reference),
-  never in the URL or a committed file.
+  not run it, do not echo the value back, and tell the user that cfm does
+  not connect a server that needs a credential: they register it
+  themselves, outside cfm, through `/mcp`, and the secret never goes in
+  the URL or a committed file.
   cfm's secrets policy does not carve out an exception for MCP setup.
 - **Infer the transport** from the URL: a path ending in `/sse` →
   `--transport sse`, anything else → `--transport http`.
@@ -111,8 +111,8 @@ AskUserQuestion's option shape), then:
 - If the user pastes a **command** rather than a URL (`npx …`, `uvx …`),
   that is a stdio server: give them
   `claude mcp add <name> -- <command>` to run themselves, then continue
-  the flow from the provider write. Do not compose stdio commands with
-  `-e SECRET=…` on the user's behalf.
+  the flow from the provider write. Never add a credential of any kind
+  to that command on the user's behalf.
 
 ## When the add fails — ONLY after a real non-zero exit
 

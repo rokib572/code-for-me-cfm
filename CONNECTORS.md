@@ -40,10 +40,10 @@ How to connect:
 2. **Sign in.** All three built-in servers use OAuth in the browser — run
    `/mcp` in your session, pick the server, approve. cfm never asks you to
    paste a token; a custom URL with a credential baked into it is
-   refused, not accepted quietly. Credentials belong in the MCP server's
-   own config as headers or environment-variable references, per the cfm
-   secrets policy. If a setup guide tells you to put a token in a
-   committed file, don't.
+   refused, not accepted quietly. cfm never reads, stores, or forwards a
+   credential for any server: a server that needs one is set up by you,
+   outside cfm, through `/mcp`. If a setup guide tells you to put a token
+   in a committed file, don't.
 3. **Tune the sync flags** in `.cfm-workflow.yml` if you want less
    than everything:
 
