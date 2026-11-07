@@ -11,23 +11,30 @@ values are promises; the doctor converts them to facts.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP immediately
+and show exactly: "cfm runs only in Claude Code (terminal, IDE, or the
+Desktop Code tab). Your project config and brief are untouched — open this
+repo in Claude Code to continue." Do not attempt any other step.
 
-If it exits non-zero, STOP immediately and show its stderr message verbatim.
-Do not attempt any other step.
+## Step 1 — run the checks
 
-## Step 1 — run the doctor engine
+Run checks 0-9 by hand, in order, exactly as
+`${CLAUDE_PLUGIN_ROOT}/references/doctor.md` specifies them — Read, Glob,
+Grep and short shell commands, quoting its message wording verbatim.
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)" --json`
-
-- If `python3` is missing, tell the user cfm's doctor needs Python 3 and stop.
-- If the output mentions PyYAML, tell the user to run `pip install pyyaml` and stop.
-- Never reimplement the checks yourself; the engine is the single source of truth.
+- That document is the single source of truth for what each check does;
+  never invent a check or skip one. Config that fails check 1 makes
+  checks 2-9 SKIP, not FAIL.
+- Never run `verify_full`, `test_scoped`, or a `migrate_*` slot; only
+  `lint`, `lint_arch` and `typecheck` are ever executed.
+- Never read a file matching a `secret_globs` entry — names, `.gitignore`
+  lines and `.env.example` only.
 
 ## Step 2 — render the report
 
-Present a compact table: one row per check with its PASS / WARN / FAIL / SKIP
-status:
+Print the report in doctor.md's output contract: the `cfm doctor` header,
+one `[PASS|WARN|FAIL|SKIP] #<n> <name>` line per check with its failures,
+warnings and notes beneath, then the verdict line.
 
 | # | check |
 |---|---|
@@ -39,18 +46,19 @@ status:
 | 5 | models |
 | 6 | rules have teeth |
 | 7 | secrets hygiene (incl. settings denies present and none stale; sandbox status) |
-| 8 | pipeline wiring (incl. guard self-test and whether a real subagent event has been observed) |
+| 8 | pipeline wiring (settings deny layer, CLAUDE.md doctrine block matches the mode, pre-commit trigger has teeth) |
 | 9 | state |
 
-For check #5 the engine only validates the id shape mechanically; you do the
-live part: verify each configured `agents.*.model` id against the models you
-know currently exist, flag any id that no longer resolves, and suggest
+For check #5 the written rules only validate the id shape; you do the
+live part: verify each configured `agents.*.model` id against the models
+you know currently exist, flag any id that no longer resolves, and suggest
 `/cfm:configure agents` to update it.
 
 Then, for every failure, explain in one or two sentences:
 - what is broken, quoting the exact failure message,
 - the most likely fix (edit `.cfm-workflow.yml`, create the missing file,
-  fix the failing command, add an `**Enforcement:**` line to a rule).
+  fix the failing command, add an `**Enforcement:**` line to a rule,
+  regenerate the settings denies, re-render the CLAUDE.md doctrine block).
 
 ## Step 3 — verdict and follow-up
 

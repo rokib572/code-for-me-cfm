@@ -61,7 +61,7 @@ a re-dispatch and teaches the coder to ignore you.
   at the plan gate. If it still looks speculative, say so once under "Not
   mine, passing along" — you are reviewing the code, not reopening the plan.
 - **A `cfm-debt:` marker.** It documents a deliberate, ceilinged shortcut.
-  Leave it; `scripts/debt_scan.py` tracks those.
+  Leave it; the debt scan in `references/scans.md` tracks those.
 
 ## Hard limits
 

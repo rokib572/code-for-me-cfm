@@ -18,12 +18,16 @@ visibility, never capability.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with the Bash tool. If it fails, STOP and
+show exactly: "cfm runs only in Claude Code (terminal, IDE, or the
+Desktop Code tab). Your project config and brief are untouched — open
+this repo in Claude Code to continue."
 
 ## Step 1 — load config
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+Load the effective config per
+`${CLAUDE_PLUGIN_ROOT}/references/config.md` ("Load and validate the
+config").
 
 - No config → tell the user to run `/cfm:init` first and STOP.
 - Validation errors → send them to `/cfm:doctor` and STOP (never write
@@ -122,39 +126,40 @@ the default selection:
 2. Apply ONLY on explicit approval. Edit `.cfm-workflow.yml` surgically —
    never rewrite untouched sections, never reformat, keep the user's
    comments.
-3. Validate: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)"`
-   — if it errors on what you wrote, fix your edit (not the user's other
-   config) until clean.
+3. Validate: re-run the load per `${CLAUDE_PLUGIN_ROOT}/references/config.md`
+   ("Validate after a write") — if it errors on what you wrote, fix your
+   edit (not the user's other config) until clean.
 3b. **Auto-approve the tracker's tools** so sync does not prompt per call:
+   follow the allow procedure ("Allows — exact MCP tool names only") in
+   `${CLAUDE_PLUGIN_ROOT}/references/settings-denies.md`.
 
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gen_settings.py" --project-dir "$(pwd)" --write \
-     --allow-tool mcp__<server>__<tool> --allow-tool ...
-   ```
-
-   Pass `--allow-tool` once per EXACT tool name you OBSERVED live in this
-   session and that the adapter contract actually calls — create, update,
+   Give it one EXACT tool name per tool you OBSERVED live in this session
+   and that the adapter contract actually calls — create, update,
    transition, comment, get, search. Read the names off the live tools
    (claude.ai connector tools arrive as `mcp__claude_ai_<server>__<tool>`);
-   never guess the spelling, and never a wildcard — the script rejects
+   never guess the spelling, and never a wildcard — the procedure refuses
    `mcp__<server>__*`, because a server glob approves every tool the server
    exposes (the Atlassian server carries Confluence and Bitbucket writes
    too). If the tools are not live yet (auth pending), skip this and
-   re-run the command after `/mcp`.
+   redo the procedure after `/mcp`.
 
    This edits `.claude/settings.json`, a repo file, so show the added
    `permissions.allow` entries as part of step 1's diff and write them on
    the same approval. Skip this on a disconnect: leave the rules in place
    (they are inert without a provider) and say so in one line, or remove
    them by hand if the user asks.
-4. Auto-run the doctor: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
-   and show the report. A change that turns the doctor red gets flagged
-   immediately with the offer to revert the diff.
-5. **State bookkeeping**: resolve the deferred tracker question in place —
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" question --resolve --asked-by cfm:plan --outcome accepted` on a
-   connect, `--outcome declined` on a disconnect that leaves no provider —
-   so no cfm command ever auto-asks. The command exits 1 when no such
-   entry exists (existing repos never recorded one); that is fine, move on.
+4. Auto-run the doctor: run every check in
+   `${CLAUDE_PLUGIN_ROOT}/references/doctor.md` and show the report. A
+   change that turns the doctor red gets flagged immediately with the
+   offer to revert the diff.
+5. **State bookkeeping**: resolve the deferred tracker question in place
+   with the `question` operation in
+   `${CLAUDE_PLUGIN_ROOT}/references/state.md` — resolve, `asked_by`
+   `cfm:plan`, outcome `accepted` on a connect, `declined` on a disconnect
+   that leaves no provider — so no cfm command ever auto-asks. The
+   operation stops with `error: no deferred question asked_by 'cfm:plan'`
+   when no such entry exists (existing repos never recorded one); that is
+   fine, move on.
 6. **Backfill the plans** (connect only, when `docs/plans/*.md` exist and
    `create_tasks` is on). Every phase of every plan becomes a task — this
    is the default outcome of connecting, not an optional extra.
@@ -167,19 +172,22 @@ the default selection:
       `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` Part 2 exactly — container
       per plan, then one task per phase, binding line written back into
       the plan file after each create, phases already bound skipped.
-   3. Pipe every outbound payload through
-      `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` (the single
+   3. Run every outbound payload through the redaction pass in
+      `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` (the single
       redaction source — never reimplement or inline its patterns) and
-      send only the pipe's OUTPUT. When unsure whether a string is a
+      send only the pass's OUTPUT. If the pass cannot be completed, post
+      nothing for that payload. When unsure whether a string is a
       credential, drop it and note `[redacted]`.
    4. Report the tally per plan. Per-task failures are lines in that
       tally, not stops — leave those phases unbound so the next sync
       retries them. A wholesale failure (auth not completed, connector
       down) is one warning line: the markdown files remain canonical and
       the backfill can be re-run any time by re-running this command.
-   5. After ANY sync attempt, record it in one call:
-      `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --provider <provider> --last-sync "ok" --bind "<plan path>#<phase id>=<provider>:<key>" ...`
-      (`--last-sync "failed: <reason>"` when it failed).
+   5. After ANY sync attempt, record it in one `tracker` operation
+      (`${CLAUDE_PLUGIN_ROOT}/references/state.md`): provider
+      `<provider>`, last_sync `"ok"`, and one bind
+      `<plan path>#<phase id>=<provider>:<key>` per binding written
+      (last_sync `"failed: <reason>"` when it failed).
 
    If auth from step 4 is not complete yet, the tools are not live — say
    so plainly, skip the backfill, and tell the user to re-run
@@ -192,14 +200,15 @@ the default selection:
 - The only writes: the MCP server registration from step 4 (at the scope
   the user picked — `.mcp.json` ONLY when they chose project scope), the
   approved config diff, the `permissions.allow` entries of step 6.3b,
-  state bookkeeping through `scripts/state.py` only (the deferred-question
-  outcome and the tracker fields), the binding lines added to
-  plan files by step 6's backfill, and — only after approval — tracker
-  calls through the redaction pipe. Nothing else.
-- Never add an allow rule beyond what `gen_settings.py` generates, and
-  never a wildcard: no `mcp__<server>__*`, no `Bash(claude mcp add *)`, no
-  bare `Bash(python3 *)` to skip the redaction prompt. Each trades a guard
-  layer for convenience and is never worth it.
+  the ledger through the operations in `references/state.md` only (the
+  deferred-question outcome and the tracker fields), the binding lines
+  added to plan files by step 6's backfill, and — only after approval —
+  tracker calls through the redaction pass. Nothing else.
+- Never add an allow rule beyond what the allow procedure in
+  `references/settings-denies.md` accepts, and never a wildcard: no
+  `mcp__<server>__*`, no `Bash(claude mcp add *)`, no allow the config
+  does not derive. Each trades a permission layer for convenience and is
+  never worth it.
 - The backfill adds binding lines to plans; it never edits a plan's
   phases, goals, or criteria. Plan content changes belong to `/cfm:plan`.
 - Never ask for, accept, echo, or store a tracker credential. The built-in

@@ -12,12 +12,16 @@ The plan file is canonical; any tracker is a projection of it.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with the Bash tool. If it fails, STOP and
+show exactly: "cfm runs only in Claude Code (terminal, IDE, or the
+Desktop Code tab). Your project config and brief are untouched — open
+this repo in Claude Code to continue."
 
 ## Step 1 — load config
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+Load the effective config per
+`${CLAUDE_PLUGIN_ROOT}/references/config.md` ("Load and validate the
+config").
 
 - No config → send the user to `/cfm:init` and STOP.
 - Validation errors → send them to `/cfm:doctor` and STOP (never plan on a
@@ -40,9 +44,9 @@ draft-show-approve flow described below and say nothing about it
 - If a product brief `docs/brief.md` exists, read it for context on where
   the feature fits.
 - If the argument is `fix-<slug>` (a `/cfm:diagnose` hand-off, in this
-  session or a fresh one), run
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" show`
-  and, when the ledger holds a completed phase `diagnose-<slug>`, treat its
+  session or a fresh one), run the `show` operation in
+  `${CLAUDE_PLUGIN_ROOT}/references/state.md` (a read of
+  `.cfm/state.json`) and, when the ledger holds a completed phase `diagnose-<slug>`, treat its
   `notes` as the brief: `root_cause` is the problem statement, `fix_scope`
   seeds the first phase's scope, `regression_seam` is its `seams` line, and
   `red_command` is its first test expectation (the loop that goes red must
@@ -141,8 +145,9 @@ reconcile consumes; without it, an amendment silently duplicates tasks.
 
 ## Step 7 — tracker (greenfield-gated question)
 
-Check config `tracker.provider` and the `deferred_questions` in
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" show`.
+Check config `tracker.provider` and the `deferred_questions` the ledger
+holds (the `show` operation in
+`${CLAUDE_PLUGIN_ROOT}/references/state.md`).
 
 - **Provider is null AND `deferred_questions` holds the tracker-question
   entry with `"outcome": null`** — recorded ONLY by greenfield
@@ -161,9 +166,10 @@ Check config `tracker.provider` and the `deferred_questions` in
     the next `/cfm:plan` — that re-ask is intentional. Either way, the
     sub-flow's STOP ends only the tracker step, never the plan: ALWAYS
     continue to step 8.
-  - **no** → `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" question --resolve --asked-by cfm:plan --outcome declined`
-    — the entry is updated in place, so no cfm command ever auto-asks
-    again.
+  - **no** → run the `question` operation in
+    `${CLAUDE_PLUGIN_ROOT}/references/state.md`: resolve, `asked_by`
+    `cfm:plan`, outcome `declined` — the entry is updated in place, so
+    no cfm command ever auto-asks again.
 - **No such pending entry** (existing/scaffolded/adopted repos, or the
   question was already answered) → do NOT ask. If no tracker is
   connected, end the tracker step with exactly ONE informational line:
@@ -171,8 +177,9 @@ Check config `tracker.provider` and the `deferred_questions` in
   Nothing else.
 - **Provider IS connected** → if a deferred tracker entry still has
   `"outcome": null` (e.g. the provider was hand-edited into config),
-  close it (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" question --resolve --asked-by cfm:plan --outcome accepted`)
-  so `/cfm:status` stops listing it as pending. Then sync, gated on `tracker.sync.create_tasks`,
+  close it (the `question` operation in `references/state.md`: resolve,
+  `asked_by` `cfm:plan`, outcome `accepted`) so `/cfm:status` stops
+  listing it as pending. Then sync, gated on `tracker.sync.create_tasks`,
   following the adapter contract in `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`
   Part 2:
 
@@ -189,18 +196,19 @@ Check config `tracker.provider` and the `deferred_questions` in
     Show the user the reconcile summary (`updated N, created M, closed
     K`) before the calls, then run it.
 
-  Pipe every outbound payload through
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` (the single
-  redaction source — never reimplement or inline its patterns), sending
-  only the pipe's OUTPUT. When unsure whether a string is a credential,
-  drop it and note `[redacted]`. A ticket is the most public place in the
-  system.
+  Run every outbound payload through the redaction pass in
+  `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` (the single redaction
+  source — never reimplement or inline its patterns), sending only the
+  pass's OUTPUT. If the pass cannot be completed, post nothing for that
+  payload. When unsure whether a string is a credential, drop it and
+  note `[redacted]`. A ticket is the most public place in the system.
 
   Adding the binding lines is bookkeeping on a plan the user just
   approved: apply it, mention it in one line, do not re-open the approval
-  gate. Cache the bindings and the outcome in one call:
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --provider <provider> --last-sync "ok" --bind "<plan path>#<phase id>=<provider>:<key>" ...`
-  (`--last-sync "failed: <reason>"` on failure).
+  gate. Cache the bindings and the outcome in one `tracker` operation
+  (`${CLAUDE_PLUGIN_ROOT}/references/state.md`): provider `<provider>`,
+  last_sync `"ok"`, and one bind `<plan path>#<phase id>=<provider>:<key>`
+  per binding written (last_sync `"failed: <reason>"` on failure).
 
 Tracker failure of any kind (connector down, auth error, API rejection)
 degrades to a one-line warning and continues — the plan file is written,
@@ -219,8 +227,8 @@ starting a phase is a human gate.
 - No file writes while in plan mode; the plan file is written only after
   the plan-mode approval.
 - The only writes: the plan file (including the `tracker` binding lines
-  step 7 writes back), state through `scripts/state.py` only
-  (deferred-question and tracker bookkeeping), and the approved config
-  diff of Step 7. Nothing else.
+  step 7 writes back), the ledger through the operations in
+  `references/state.md` only (deferred-question and tracker
+  bookkeeping), and the approved config diff of Step 7. Nothing else.
 - A tracker task is never deleted on an amendment — dropped phases get a
   comment and a close, so history survives.

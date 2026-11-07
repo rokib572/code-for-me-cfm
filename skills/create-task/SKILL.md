@@ -11,12 +11,16 @@ offline; a connected tracker only mirrors the file.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with the Bash tool. If it fails, STOP and
+show exactly: "cfm runs only in Claude Code (terminal, IDE, or the
+Desktop Code tab). Your project config and brief are untouched — open
+this repo in Claude Code to continue."
 
 ## Step 1 — load config
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+Load the effective config per
+`${CLAUDE_PLUGIN_ROOT}/references/config.md` ("Load and validate the
+config").
 
 - No config → send the user to `/cfm:init` and STOP.
 - Validation errors → send them to `/cfm:doctor` and STOP.
@@ -54,11 +58,12 @@ task.
 - **Connected** (config `tracker.provider` set, `tracker.sync.create_tasks`
   true): mirror the task — title, description, acceptance criteria, a
   pointer to the task file. Follow the adapter contract in
-  `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`, and pipe
-  every outbound payload through
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` (the single
-  redaction source — never reimplement or inline its patterns), sending
-  only the pipe's OUTPUT.
+  `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`, and run every outbound payload
+  through the redaction pass in
+  `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` (the single redaction
+  source — never reimplement or inline its patterns), sending only the
+  pass's OUTPUT. If the pass cannot be completed, post nothing for that
+  payload.
 
   Then write the returned key back into the task file as its binding line
   — `- **tracker**: <provider>:<key> — <url>`, the format in Part 2 —
@@ -67,10 +72,11 @@ task.
   back is a duplicate waiting to happen.
 
   When unsure whether a string is a credential, drop it and note
-  `[redacted]`. Record the attempt either way:
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --last-sync "ok" --bind "docs/tasks/<slug>.md=<provider>:<key>"`
-  (or `--last-sync "failed: <reason>"`). Sync failure of any kind →
-  one-line warning and done; the file remains canonical.
+  `[redacted]`. Record the attempt either way with the `tracker`
+  operation in `${CLAUDE_PLUGIN_ROOT}/references/state.md`: last_sync
+  `"ok"` and the bind `docs/tasks/<slug>.md=<provider>:<key>` (or
+  last_sync `"failed: <reason>"`). Sync failure of any kind → one-line
+  warning and done; the file remains canonical.
 - **Not connected**: never ask about connecting one here — that is
   `/cfm:connect-tracker`'s job (greenfield projects get asked once by
   `/cfm:plan` after the first plan). Just note the task is local-only,
@@ -81,5 +87,5 @@ task.
 - No product code, no scaffold, no plan phases — capture only.
 - Never mutate git; never run `verify_full`.
 - The only writes: the task file (including its tracker binding line) and,
-  after a sync attempt, the tracker bookkeeping through
-  `scripts/state.py`. Nothing else.
+  after a sync attempt, the tracker bookkeeping through the `tracker`
+  operation in `references/state.md`. Nothing else.

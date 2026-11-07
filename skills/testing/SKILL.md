@@ -9,9 +9,9 @@ compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code ta
 Reference, not a workflow. There is no environment gate and nothing to run
 here — read it, apply it, and carry on with whatever dispatched you.
 
-cfm already enforces where a test may *run*: the e2e-test agent fills
-`commands.test_scoped` with its own explicit file paths and widens to
-nothing. That is scope hygiene, and it says nothing about whether the test
+cfm already settles where a test may *run*: the e2e-test agent file
+fills `commands.test_scoped` with its own explicit file paths and widens
+to nothing. That is scope hygiene, and it says nothing about whether the test
 is worth keeping. This file is the other half.
 
 ## Seams

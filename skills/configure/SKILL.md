@@ -12,16 +12,24 @@ is the only sanctioned way to change it besides hand-editing plus doctor.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — load
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+Load and validate the effective config by hand, following "Load and
+validate the config" in `${CLAUDE_PLUGIN_ROOT}/references/config.md`
+(defaults ← team file ← local overrides; disabled agents dropped).
 
 - No config → tell the user to run `/cfm:init` first and STOP.
-- Validation errors → show them, recommend fixing via this skill or
-  `/cfm:doctor`, and continue only for the domains the errors don't touch.
+- Validation errors → show them verbatim, recommend fixing via this skill
+  or `/cfm:doctor`, and continue only for the domains the errors don't
+  touch.
+- `review.trigger: on-stop` → the loader reads it as `phase-gate` with a
+  warning; propose the one-line diff to `phase-gate` (step 4) before any
+  other change.
 
 ## Step 2 — route to a domain
 
@@ -42,8 +50,9 @@ Domain notes:
   (`/cfm:add-agent`), which owns the questions, defaults, and
   single-owner conflict handling.
 - **mode**: follow the mode skill flow (`/cfm:mode`), which owns the
-  table of what each value does and the one-line diff. It is a team
-  setting: never route it to `.cfm-workflow.local.yml`.
+  table of what each value does, the one-line diff, and the CLAUDE.md
+  doctrine re-render. It is a team setting: never route it to
+  `.cfm-workflow.local.yml`.
 - **tracker**: follow the connect-tracker skill flow
   (`/cfm:connect-tracker`), which owns the provider menu (Jira, ClickUp,
   Trello, Custom), the MCP server connection, sync flags, and disconnect.
@@ -68,22 +77,28 @@ Domain notes:
   autonomy, review.trigger) — show ALL of them in the diff, not just the
   profile name.
 - **git level**: L0 read-only · L1 commit-local · L2 push-branches ·
-  L3 open-PRs. The level itself decides what the guard forbids
-  (`cfm_config.GIT_LEVEL_GRANTS`); `forbidden_ops` in config only EXTENDS
-  that list and never needs regenerating. Show what the new level grants
-  in the diff's consequence lines. Pushes landing on the default branch,
-  force or delete pushes, branch deletes, git aliases, `git config`
-  writes, and `gh pr merge` stay blocked at every level.
-- **review**: `review_gates` order, `review.trigger`, `review.auto_scope`,
-  and `review.scope` — `phase` (default) runs the reviewers once over the
-  whole phase diff, `layer` runs them after every layer.
+  L3 open-PRs. The level itself decides which git/gh operations the
+  settings denies forbid (the grants table in config.md §2.4);
+  `forbidden_ops` in config only EXTENDS that list and never needs
+  regenerating. Show what the new level grants in the diff's consequence
+  lines. Pushes landing on the default branch, force or delete pushes,
+  branch deletes, `git config` writes, and `gh pr merge` stay denied at
+  every level.
+- **review**: `review_gates` order, `review.trigger` (`manual` ·
+  `phase-gate` · `pre-commit`; `on-stop` is retired — nothing in this
+  edition fires it — and loads as `phase-gate`, so offer the diff that
+  writes `phase-gate` explicitly), `review.auto_scope`, and
+  `review.scope` — `phase` (default) runs the reviewers once over the
+  whole phase diff, `layer` runs them after every layer. `pre-commit`
+  has teeth only once `.git/hooks/pre-commit` exists (doctor check 8;
+  `/cfm:code-review` installs it) — say so in the consequence line.
 - **secrets**: `secret_globs` is additive — the defaults are always in
   force and the file lists only extras. A subset in the file is not a
   shrink; the loader re-adds the defaults and warns.
 - **model/autonomy/plan-gate changes for one developer**: offer to write
   them to `.cfm-workflow.local.yml` (gitignored, personal) instead of the
   team file. Only `agents.*.model`, `agents.*.autonomy`,
-  `implement.plan_gate`, and `token_reporting` may live there — the parser
+  `implement.plan_gate`, and `token_reporting` may live there — the loader
   rejects anything else.
 
 ## Step 3 — refuse invariant changes
@@ -103,39 +118,38 @@ enforcement. These are hard invariants; no profile or argument unlocks them.
 2. Apply ONLY on explicit approval. Edit the target file surgically —
    never rewrite untouched sections, never reformat, keep the user's
    comments.
-3. Validate: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)"`
-   — if it errors on what you wrote, fix your edit (not the user's other
-   config) until clean. The conventions domain touches no config value, so
-   this step is a no-op there; step 4 below is its real check.
-4. Auto-run the doctor: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
-   and show the report. A change that turns the doctor red gets flagged
+3. Validate: re-run the load of step 1 ("Validate after a write" in
+   config.md) and expect zero errors — if it errors on what you wrote, fix
+   your edit (not the user's other config) until clean. The conventions
+   domain touches no config value, so this step is a no-op there; step 4
+   below is its real check.
+4. Auto-run the doctor: run checks 0-9 by hand per
+   `${CLAUDE_PLUGIN_ROOT}/references/doctor.md` and show the report in its
+   output contract. A change that turns the doctor red gets flagged
    immediately with the offer to revert the diff.
 5. If check 7 reports deny entries missing from or **stale** in
-   `.claude/settings.json` (a git-level or secrets change alters the
-   required set — a raised level must RETRACT the old `git push:*`-style
-   denies or the change is silently ineffective at the permission layer;
-   a project initialized before the denies existed has none), offer to
-   regenerate them: run
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gen_settings.py" --project-dir "$(pwd)"`,
-   show the diff against the current file (cfm's own recorded rules are
-   retracted; everything the user wrote is kept in place), and on explicit
-   approval re-run with `--write`, then re-run the doctor. This is a
-   second, sequential diff under the one-domain limit below. If the
-   sandbox is on (check 7 says so) add `--sandbox` to both runs so its
-   entries follow the config too; if it is off, mention once that
-   `--sandbox` adds the OS-level layer and leave the choice to the user.
-   The same applies to the cfm status line (check 8 says whether it is
-   on): `--statusline` writes a `statusLine` entry that shows the cfm
-   mode and the phase in flight in Claude Code's status bar, replacing a
-   personal status line inside this project only; `--remove-statusline`
-   retracts cfm's and never the user's own. Offer it once when it is off.
+   `.claude/settings.json` (a git-level, secrets or `verify_full` change
+   alters the required set — a raised level must RETRACT the old
+   `git push:*`-style denies or the change is silently ineffective at the
+   permission layer; a project initialized before the denies existed has
+   none), offer to regenerate them per
+   `${CLAUDE_PLUGIN_ROOT}/references/settings-denies.md`: derive the
+   required set, show the diff against the current file (cfm's own
+   recorded rules are retracted; everything the user wrote is kept in
+   place), on explicit approval write the settings file and its sidecar
+   together, then re-run the doctor. This is a second, sequential diff
+   under the one-domain limit below. If the sandbox is on (check 7 says
+   so) include the sandbox block so its entries follow the config too; if
+   it is off, mention once that the sandbox adds the OS-level layer and
+   leave the choice to the user.
 
 ## Step 5 — sweep what a deactivation leaves behind
 
 When the applied change disables an agent (`enabled: false`), the loader
 already drops it from every flow. Its NAME can still sit in project prose.
-Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/references.py" --project-dir "$(pwd)" --json` and, for every hit, propose its removal as one
-diff per file, applied only on approval:
+Run the reference sweep in `${CLAUDE_PLUGIN_ROOT}/references/scans.md`
+(raw config, whole-word grep over the files it lists) and, for every hit,
+propose its removal as one diff per file, applied only on approval:
 
 - CLAUDE.md guides, the glossary, `.claude/` skills, commands, and rules:
   delete the sentence, bullet, or table row that names the agent, and

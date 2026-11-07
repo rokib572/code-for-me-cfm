@@ -1,6 +1,6 @@
 ---
 name: upgrade
-description: Upgrades a project's cfm setup to the installed plugin version and the repo as it is now — a thorough sweep of config schema, retired and newly defaulted keys, roster agents added since init, model ids, packages and scripts the config never heard of, a full re-render of every CLAUDE.md guide, settings denies, scaffold files, and custom agent files, each proposed as a diff applied only on explicit approval, ending in a doctor run compared against the starting one. Use after updating the cfm plugin, or when the user wants the repo's cfm config brought up to date.
+description: Upgrades a project's cfm setup to the installed plugin version and the repo as it is now — a thorough sweep of config schema, retired and newly defaulted keys, roster agents added since init, model ids, packages and scripts the config never heard of, a full re-render of every CLAUDE.md guide, settings denies, scaffold files, custom agent files, and leftovers from the scripted 1.x edition, each proposed as a diff applied only on explicit approval, ending in a doctor run compared against the starting one. Use after updating the cfm plugin, or when the user wants the repo's cfm config brought up to date.
 compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code tab)
 ---
 
@@ -13,38 +13,57 @@ fills gaps and retires dead keys, and never re-decides a setting.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — baseline
 
-1. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/upgrade.py" --project-dir "$(pwd)" --json`
-   - Exit 1 with "not found" → tell the user to run `/cfm:init` and STOP.
+1. Run the sweep in `${CLAUDE_PLUGIN_ROOT}/references/upgrade.md`, steps
+   0 to 7 (raw read, schema, stamp, retired keys, defaulted keys, new
+   agents, models, repo). Its stops apply verbatim:
+   - config not found → tell the user to run `/cfm:init` and STOP.
    - `schema.file` above `schema.latest` → the config is newer than this
      plugin: tell the user to update cfm and STOP.
    - `schema.file` below `schema.latest` → this plugin ships no
      migration for that schema: say so and STOP. Never send the user to
      `/cfm:init`: it refuses a repo that already has a config.
-2. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)" --json`.
-   Keep this report. It is the baseline step 5 compares against.
-3. The generators, as dry runs (nothing is written yet):
-   - `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gen_settings.py" --project-dir "$(pwd)" --check`
-     (add `--sandbox` if doctor check 7 says the sandbox is on)
-   - `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/scaffold.py" --project-dir "$(pwd)" --dry-run`
+   Then the edition sweep, which the reference does not cover:
+   - `review.trigger: on-stop` in the file: retired, propose `phase-gate`.
+   - a `statusLine` entry in `.claude/settings.json` whose command points
+     into the cfm plugin: retired, propose removing it. One the user wrote
+     is left alone.
+   - `.cfm/subagent-observed` or `.cfm/last-review.sha` on disk: written
+     by the scripted 1.x edition, propose deleting them.
+   - the three `Edit(...)` self-denies on `.claude/settings.json`,
+     `.claude/settings.local.json` and `.claude/cfm-denies.json`: kept,
+     not stale, never proposed for removal.
+2. Run the doctor by hand, checks 0-9, per
+   `${CLAUDE_PLUGIN_ROOT}/references/doctor.md`. Keep this report. It is
+   the baseline step 5 compares against.
+3. The generated surfaces, as dry runs (nothing is written yet):
+   - settings denies: the check in
+     `${CLAUDE_PLUGIN_ROOT}/references/settings-denies.md` (include the
+     sandbox block if doctor check 7 says the sandbox is on).
+   - scaffold: the dry run in `${CLAUDE_PLUGIN_ROOT}/references/scaffold.md`.
    - **CLAUDE.md re-render.** For every `kept` line in that dry run
-     whose path ends in `CLAUDE.md`, diff the file on disk against its
-     rendering from config:
-     `diff -u <path> <(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/scaffold.py" --project-dir "$(pwd)" --print <path>)`.
-     Any difference is a finding. Before the diff, list every `## `
-     section the re-render would DROP by its heading.
-   - `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agent_file.py" --project-dir "$(pwd)" --all`.
-     Compare each rendering with the file on disk. A frontmatter that
-     differs is drift.
-4. **Models, live.** For every id in the report's `models`, check it
+     whose path ends in `CLAUDE.md`, render the guide from config in
+     memory and diff it against the file on disk, per the reference. A
+     guide with `<!-- cfm:begin -->` … `<!-- cfm:end -->` markers is
+     compared on the marked region only; content outside the markers
+     survives a replace. A guide without markers (an older edition) is a
+     full replacement: before the diff, list every `## ` section the
+     re-render would DROP by its heading.
+   - custom agent files: the dry run in
+     `${CLAUDE_PLUGIN_ROOT}/references/agent-file.md` for every enabled
+     custom agent. Compare each rendering with the file on disk. A
+     frontmatter that differs is drift.
+4. **Models, live.** For every id in the sweep's `models`, check it
    against the models that exist now. Never use a hardcoded list. Flag
    an id that no longer resolves, and an id with a newer model in the
    same family and tier (e.g. an older haiku on a mechanical agent). The
-   proposal keeps the family and tier: haiku stays haiku. The report
+   proposal keeps the family and tier: haiku stays haiku. The sweep
    lists only enabled agents. A disabled agent is never proposed, checked,
    or re-added.
 
@@ -56,9 +75,10 @@ The plan in step 3 follows the same order.
 | # | domain | finding | proposed change |
 |---|---|---|---|
 
-- **config / retired**: each `unknown_keys` entry. The proposal is
-  removal. A key the user may still need (a typo of a real key, a custom
-  note) is proposed as a rename or a comment instead.
+- **config / retired**: each `unknown_keys` entry, plus `review.trigger:
+  on-stop`. The proposal is removal (`on-stop` → `phase-gate`). A key the
+  user may still need (a typo of a real key, a custom note) is proposed
+  as a rename or a comment instead.
 - **config / defaults**: the `defaulted_keys` entries, as ONE row. The
   proposal writes them explicitly with their default values, so the file
   shows every setting the plugin reads. Offer this, never push it.
@@ -86,23 +106,27 @@ The plan in step 3 follows the same order.
   fix and the command that owns it (`/cfm:configure <domain>`,
   `/cfm:add-agent`, `/cfm:connect-tracker`). These are fixed through
   those flows and never edited from here.
-- **settings**: missing or stale denies and allows from `--check`.
+- **settings**: missing or stale denies and allows from the check, and
+  the retired `statusLine` entry when it points into the plugin.
 - **scaffold**: every `would-write` line (missing workflow files and
   `.gitignore` lines). Existing files are never touched.
+- **1.x leftovers**: `.cfm/subagent-observed` and `.cfm/last-review.sha`
+  when present. The proposal is deletion; nothing reads them now.
 - **custom agent files**: every frontmatter drift from step 1.3.
-- **disabled-agent references**: every hit from
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/references.py" --project-dir "$(pwd)" --json`.
-  Handle each exactly as `/cfm:configure` step 5 says: prose deleted, a
-  rule's enforcement reassigned (never deleted), local override blocks
-  dropped, a disabled custom agent's file deleted. A CLAUDE.md guide that
-  is also being re-rendered needs only the hits the re-render does not
-  already remove.
-- **CLAUDE.md**: one row per guide that differs. The proposal is a full
-  replacement with the rendering. Name the dropped sections in the row.
-  A `## Feature structure` section is written by the conventions round,
-  not by the renderer. It is carried over after the replace (step 3.4)
-  unless the user says otherwise. Any other dropped hand-written text is
-  gone once applied, so say that in the row.
+- **disabled-agent references**: every hit from the reference sweep in
+  `${CLAUDE_PLUGIN_ROOT}/references/scans.md`. Handle each exactly as
+  `/cfm:configure` step 5 says: prose deleted, a rule's enforcement
+  reassigned (never deleted), local override blocks dropped, a disabled
+  custom agent's file deleted. A CLAUDE.md guide that is also being
+  re-rendered needs only the hits the re-render does not already remove.
+- **CLAUDE.md**: one row per guide that differs. With markers, the
+  proposal replaces the marked region and everything outside it (the
+  conventions round's `## Feature structure`, the user's own sections)
+  stays byte-for-byte; say so. Without markers, the proposal is a full
+  replacement: name the dropped sections in the row. `## Feature
+  structure` is carried over after the replace (step 3.4) unless the
+  user says otherwise; any other dropped hand-written text is gone once
+  applied, so say that in the row.
 
 No findings at all → say "cfm is up to date with plugin <version>",
 show the doctor verdict, and STOP.
@@ -116,23 +140,29 @@ show the doctor verdict, and STOP.
    which upgrades to apply. Nothing unselected is applied.
 3. Apply the selected groups in table order. Each is its own surgical
    edit: never rewrite untouched sections, never reformat, keep the
-   user's comments. After each config edit, validate:
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)"`.
+   user's comments. After each config edit, validate with the "load and
+   validate" procedure in `${CLAUDE_PLUGIN_ROOT}/references/config.md`.
    An error on what you wrote is yours to fix before moving on. Never
    fix it by changing the user's other config.
-4. The generators run after the config is final, because the config feeds
-   them. For each one selected:
-   - settings: `gen_settings.py --project-dir "$(pwd)" --write` (with
-     the same `--sandbox` choice as the check)
-   - scaffold: `scaffold.py --project-dir "$(pwd)"`
-   - custom agent files: `agent_file.py --project-dir "$(pwd)" --all --write`
-     (refreshes frontmatter and keeps the body)
-   - CLAUDE.md, LAST, so it renders the final config:
-     `scaffold.py --project-dir "$(pwd)" --replace <each selected path>`.
-     Then re-append each carried-over `## Feature structure` section to
-     its file verbatim, with the Edit tool. If the config changed in step
-     3.3, re-run the step 1.3 diff first. The user approved the old one,
-     so show what moved before replacing.
+4. The generated surfaces come after the config is final, because the
+   config feeds them. For each one selected:
+   - settings: the propose-diff-approve-write procedure in
+     `references/settings-denies.md` (with the same sandbox choice as
+     the check). The retired `statusLine` entry goes in the same diff.
+     When an Edit self-deny from 1.x refuses the write, hand the human
+     the exact JSON to apply themselves.
+   - scaffold: the render in `references/scaffold.md` (keep, never
+     clobber: only missing files and `.gitignore` lines are written).
+   - 1.x leftovers: `rm` each selected file.
+   - custom agent files: the re-render in `references/agent-file.md`
+     (refreshes frontmatter and keeps the body).
+   - CLAUDE.md, LAST, so it renders the final config: the replace
+     procedure in `references/scaffold.md` for each selected path — one
+     Edit of the marked region, or, without markers, a Write of the fresh
+     rendering followed by re-appending each carried-over `## Feature
+     structure` section verbatim outside the markers. If the config
+     changed in step 3.3, redo the step 1.3 diff first. The user
+     approved the old one, so show what moved before replacing.
 
 ## Step 4 — what the upgrade does not decide
 
@@ -147,24 +177,27 @@ The skill names these and leaves them to the user, one line each:
 
 ## Step 5 — prove it
 
-Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
-and show the report next to the baseline: checks fixed, checks still
-failing, and any check that got WORSE. A check that got worse is
-flagged immediately, with an offer to revert that domain's change. End
-with one line: **upgraded to cfm <version>** (applied N of M) or
-**unhealthy (N failures)**.
+Run the doctor again, checks 0-9 per
+`${CLAUDE_PLUGIN_ROOT}/references/doctor.md`, and show the report next to
+the baseline as its "baseline comparison" section says: checks fixed,
+checks still failing, and any check that got WORSE. A check that got
+worse is flagged immediately, with an offer to revert that domain's
+change. End with one line: **upgraded to cfm <version>** (applied N of M)
+or **unhealthy (N failures)**.
 
 ## Hard limits
 
 - Never apply without showing the diff and getting approval.
 - The only existing files the upgrade overwrites are the CLAUDE.md guides
-  the user selected, via `scaffold.py --replace`. Everything else is a
-  surgical edit or a create-if-missing.
+  the user selected, via the scaffold reference's replace procedure,
+  which touches only the marked region. Everything else is a surgical
+  edit, a create-if-missing, or an approved delete of a 1.x leftover.
 - Never re-decide a user's value: profile, git level, autonomy, review
   order, mode, and commands stay as written. A changed default in the
   plugin does not change a value the file sets.
 - Refuse invariant changes exactly as `/cfm:configure` step 3 does.
 - Never touch git, never run `verify_full`, never read `secret_globs`
   files, never write product code.
-- The state file is untouched. Its schema is owned by `scripts/state.py`,
-  and the doctor's check 9 validates it.
+- The state file is untouched. Its schema is
+  `${CLAUDE_PLUGIN_ROOT}/references/state.md`, and the doctor's check 9
+  validates it.

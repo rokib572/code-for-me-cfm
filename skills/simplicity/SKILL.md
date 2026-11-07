@@ -107,8 +107,8 @@ is not. Mark it where you took it:
 
 For example: `# cfm-debt: global lock, per-account locks if throughput
 matters`. Both halves are load-bearing. A marker naming a ceiling with no
-trigger is how "later" quietly becomes "never", and
-`scripts/debt_scan.py` flags exactly those.
+trigger is how "later" quietly becomes "never", and the debt scan in
+`references/scans.md` flags exactly those.
 
 The marker is for a real corner cut with a known limit — a global lock, an
 O(n²) scan over data expected to stay small, a naive heuristic. Code that is

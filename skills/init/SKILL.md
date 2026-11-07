@@ -8,21 +8,27 @@ compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code ta
 
 Produce a valid, doctor-green `.cfm-workflow.yml` for this project. You
 are the orchestrator: interview, propose, and write config — never write
-product code or scaffold files yourself. Once the config exists the guard
-holds you to that in every later session (cfm mode, `mode: enforced`);
-during init itself the stack skeleton goes to the coder for the same
-reason.
+product code or scaffold files yourself. Once the config exists the
+doctrine block rendered into CLAUDE.md holds you to that in every later
+session (cfm mode, `mode: enforced`) — nothing refuses a write at
+runtime; the rule holds because you follow it. During init itself the
+stack skeleton goes to the coder for the same reason.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run with Bash: `test "$CLAUDECODE" = "1"`
+If it exits non-zero, STOP and show exactly: "cfm runs only in Claude
+Code (terminal, IDE, or the Desktop Code tab). Your project config and
+brief are untouched — open this repo in Claude Code to continue."
 
 ## Step 1 — scan and classify
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init_scan.py" --project-dir "$(pwd)"`
+Run the init scan by hand per the **Init scan** section of
+`${CLAUDE_PLUGIN_ROOT}/references/scans.md`: collect every signal in
+order, apply the decision rules, and report `scenario`, `scenario_note`
+and `signals` with exactly the keys it names.
 
-The JSON's `scenario` field routes you:
+The `scenario` field routes you:
 
 | scenario | action |
 |---|---|
@@ -39,11 +45,12 @@ Rules that apply to every scenario:
 
 - Ask each question exactly ONCE, at the moment its answer first matters.
   Do not front-load; a question whose answer only matters later (e.g.
-  tracker connection, guardrail tuning) is DEFERRED: record it with
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" question --ask "<the question>" --asked-by <the command that will ask it>`
-  — that command resolves the entry in place when it asks (the script
+  tracker connection) is DEFERRED: record it in the state ledger with the
+  `question` operation (ask `<the question>`, `asked_by` = the command
+  that will ask it) per `${CLAUDE_PLUGIN_ROOT}/references/state.md` —
+  that command resolves the entry in place when it asks (the ask rule
   never writes a duplicate). The tracker question is deferred
-  this way (`--asked-by cfm:plan`) ONLY on
+  this way (`asked_by: cfm:plan`) ONLY on
   the greenfield path; the existing, scaffolded, and adoption paths never
   record it — they instead mention `/cfm:connect-tracker` once in init's
   closing summary.
@@ -122,17 +129,19 @@ dump. Run them in order:
    - **Customize per agent** — set auto / confirm / confirm-plan agent by
      agent.
 5. **3d — assemble and approve.** Build the full config from the 3a–3c
-   answers. Fields and defaults are defined by `scripts/cfm_config.py` —
-   match its schema exactly (schema_version 2,
-   `cfm.requires.surface: claude-code`). Set `review_gates` to the default
-   pipeline:
+   answers. Fields and defaults are defined by
+   `${CLAUDE_PLUGIN_ROOT}/references/config.md` — match its schema exactly
+   (schema_version 2, `cfm.requires.surface: claude-code`) and validate
+   the assembled YAML against its section 5 before showing it. Set
+   `review_gates` to the default pipeline:
    `[e2e-test, [code-reviewer, security-check, simplicity-check], mechanical-gate]`,
    dropping entries whose agent the user did not enable in 3a. The three
    reviewers share one parallel step deliberately — they answer different
    questions (is it right / is it safe / is it more code than the job
    needs), and merging them into one ranked report lets a finding on one
    axis mask a finding on another. Running them in parallel costs no extra
-   wall-clock. Write
+   wall-clock. `review.trigger` is `manual`, `phase-gate` (default) or
+   `pre-commit` — `on-stop` is retired and never written. Write
    `implement: {plan_gate: true}` explicitly, the same way `review:` is
    written — do NOT add an interview question for it; 3c already covers
    dispatch autonomy, and `/cfm:configure` owns the change later. Write
@@ -143,10 +152,13 @@ dump. Run them in order:
    COMPLETE proposed YAML and get explicit approval — this final look
    checks the assembly; it is not a substitute for 3a–3c.
 6. Write `.cfm-workflow.yml`. If the rules file does not exist yet,
-   create the config's `rules_file` with a minimal seed (rules formatted as
-   `## R<n>. <title>` + `**Enforcement:**` line — see the fixture format in
-   the doctor's rules check). Greenfield: skip this by hand — the scaffold
-   script in `references/scaffold.md` renders the rules seed from config.
+   create the config's `rules_file` from the rules-seed template in
+   `${CLAUDE_PLUGIN_ROOT}/references/scaffold.md` (`## R<n>. <title>` +
+   `**Enforcement:**` line; owners picked from the ENABLED roster, or
+   `lint(lint_arch)` when that slot exists). With no enabled reviewer and
+   no lint slot, stop and send the user to `/cfm:configure agents` —
+   never seed a rule whose enforcement names nothing live. Greenfield:
+   skip this — the render in `references/scaffold.md` produces the seed.
 
 ## Step 4 — conventions round
 
@@ -158,8 +170,9 @@ its categories or questions here.
 The round appends to the rules file, so it runs only once that file is on
 disk:
 
-- **Greenfield** — the rules file does not exist until the scaffold script
-  runs, and the linter does not exist until the skeleton does. Follow
+- **Greenfield** — the rules file does not exist until the workflow
+  scaffold is rendered, and the linter does not exist until the skeleton
+  does. Follow
   `references/scaffold.md`: render the workflow files (its step 1), run
   the interview and rules (step 1.5), dispatch the coder for the stack
   skeleton (step 2) so it is built to the conventions, then prove the lint
@@ -194,37 +207,37 @@ Greenfield: the scaffold and coder dispatch happen in step 4 via
 `references/scaffold.md`. The doctor must be fully green on the empty
 skeleton before init ends.
 
-**Settings denies first.** The PreToolUse guard is enforcement layer 1
-and fails open (no `python3`, an internal error); the generated
-`.claude/settings.json` deny rules are layer 2, and the doctor FAILS
-check 7 without them. Run
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gen_settings.py" --project-dir "$(pwd)"`,
-show the proposed rules as a diff against the current
-`.claude/settings.json` (cfm's rules are recorded in
-`.claude/cfm-denies.json` so a later config change can retract them;
-every entry the user wrote is kept in place), and on the user's explicit
-approval re-run with `--write`. Adoption repos with a hand-written
-settings file get the same merge — nothing of theirs is removed. If the
-user declines, say in one line that the doctor will stay red on check 7
-until the denies exist.
+**Settings denies first.** The generated `.claude/settings.json` deny
+rules are the permission layer — the one enforcement no missing
+interpreter can switch off — and the doctor FAILS check 7 without them.
+Derive the required set per
+`${CLAUDE_PLUGIN_ROOT}/references/settings-denies.md`, show the proposed
+document as a unified diff against the current `.claude/settings.json`
+(cfm's rules are recorded in `.claude/cfm-denies.json` so a later config
+change can retract them; every entry the user wrote is kept in place),
+and write the pair ONLY on the user's explicit approval. Adoption repos
+with a hand-written settings file get the same merge — nothing of theirs
+is removed. If the user declines, say in one line that the doctor will
+stay red on check 7 until the denies exist.
 
-Then offer, once, the OS-level layer: `--sandbox` on the same command
-enables Claude Code's Bash sandbox in the project settings with
-`denyRead` on every secret glob and `denyWrite` on the config pair, which
-closes the interpreter, variable and script-file evasions the text guard
-cannot see. It needs macOS, Linux or WSL2 (Linux: `bubblewrap`; the
-`/sandbox` panel lists what is missing) and adds network prompts of its
-own, so it is the user's call — show the block as part of the same diff
-if they say yes, and tell them to verify the resolved paths in
-`/sandbox` → Config afterwards.
+Then offer, once, the OS-level layer: the sandbox block from the same
+reference enables Claude Code's Bash sandbox in the project settings with
+`denyRead` on every secret glob and `denyWrite` on the config pair and
+sidecar, which closes the interpreter, variable and script-file evasions
+the text rules cannot see. It needs macOS, Linux or WSL2 (Linux:
+`bubblewrap`; the `/sandbox` panel lists what is missing) and adds
+network prompts of its own, so it is the user's call — show the block as
+part of the same diff if they say yes, and tell them to verify the
+resolved paths in `/sandbox` → Config afterwards.
 
-Then offer, once, the cfm status line: `--statusline` on the same command
-writes a `statusLine` entry that shows the cfm mode and the phase in
-flight in Claude Code's status bar. It replaces a personal status line
-inside this project only (`--remove-statusline` retracts cfm's later, and
-never the user's own); show it in the same diff if they say yes.
+Then recommend, once, that the user install their own staged-secret scan
+(for example gitleaks) as `.git/hooks/pre-commit`: cfm ships no script
+for it and never writes one; the doctor warns on check 7 while that file
+is absent, and the warning never turns the verdict red.
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
+Run the doctor: every check 0–9 by hand per
+`${CLAUDE_PLUGIN_ROOT}/references/doctor.md`, printed in its output
+contract.
 
 - Doctor failures caused by init's own output are yours to fix: adjust the
   config or seed files and re-run until green (command slots that fail
@@ -237,10 +250,10 @@ Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
 
 ## Hard limits
 
-- Never scaffold product code in this skill. Running
-  `scripts/scaffold.py` is allowed — it renders WORKFLOW files from
-  config; the STACK SKELETON is always dispatched to the coder agent
-  (see `references/scaffold.md`).
+- Never scaffold product code in this skill. Rendering the workflow
+  scaffold per `${CLAUDE_PLUGIN_ROOT}/references/scaffold.md` is allowed
+  — it writes WORKFLOW files from config; the STACK SKELETON is always
+  dispatched to the coder agent (see `references/scaffold.md`).
 - Never overwrite an existing CLAUDE.md, agent file, or settings file
   (adoption absorbs; it does not clobber). The conventions round APPENDS a
   `## Feature structure` section to CLAUDE.md — appending a new section is

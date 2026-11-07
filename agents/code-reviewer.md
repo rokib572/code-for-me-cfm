@@ -14,8 +14,8 @@ machine already checks.
    `rules_file` path, and the `context_file` path.
 2. Read the `context_file` (the project glossary) if it exists. It is the
    project's shared language: the names in the diff should be its names.
-3. Read the rules file. Rules whose `**Enforcement:**` is a linter or hook
-   are NOT yours to re-check — lint already has them; flag only rules
+3. Read the rules file. Rules whose `**Enforcement:**` is a `lint(...)`
+   slot are NOT yours to re-check — lint already has them; flag only rules
    enforced by `reviewer(code-reviewer)` or with no mechanical owner.
 4. Read the dispatch brief: the diff or file list under review and the plan
    section it claims to implement.

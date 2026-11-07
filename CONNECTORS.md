@@ -71,9 +71,10 @@ live in `skills/connect-tracker/references/mcp-servers.md` — that file is
 the single source, so nothing types a URL from memory.
 
 **Permission prompts.** Connecting writes allow rules into
-`.claude/settings.json` (via `scripts/gen_settings.py`, on the same
-approval as the config diff) so routine tracker work runs unattended —
-but only for the **exact tool names** cfm observed live in the session:
+`.claude/settings.json` (per the allow procedure in
+`references/settings-denies.md`, on the same approval as the config
+diff) so routine tracker work runs unattended — but only for the
+**exact tool names** cfm observed live in the session:
 
 ```json
 {
@@ -92,19 +93,19 @@ Confluence and Bitbucket write the Rovo server exposes. And never
 `claude mcp add`: a stdio server is an arbitrary command Claude Code
 launches, so registering a server stays a one-time prompt — approving that
 Bash call is your consent. Deny rules always beat allow rules, so none of
-this widens the secret-file or forbidden-git denies. Three things prompt
-on purpose: the server registration, the redaction pipe (narrowing a rule
-to it would take a blanket `Bash(python3 *)`, which is a worse trade than
-a prompt), and any bulk backfill, which asks once before its first call.
-The doctor warns when a wildcard or an `mcp add` allow appears.
+this widens the secret-file or forbidden-git denies. Two things prompt
+on purpose: the server registration, and any bulk backfill, which asks
+once before its first call. The redaction pass prompts for nothing — it
+is applied by Claude in the session, not by a command. The doctor warns
+when a wildcard or an `mcp add` allow appears.
 
 Disconnecting is just setting `provider: null`. Nothing else changes —
 the plan files were canonical all along.
 
-Everything cfm posts to a tracker first passes through the mechanical
-redaction filter `scripts/redact.py` (a ticket comment is the most
-public place in the system). That script is the single source of the
-redaction patterns.
+Everything cfm posts to a tracker first goes through the redaction pass
+in `references/redaction.md` (a ticket comment is the most public place
+in the system). That document is the single source of the redaction
+patterns.
 
 ---
 
@@ -243,23 +244,20 @@ ticket exactly like a file from an untrusted source:
 
 ### Redaction — mandatory, mechanical
 
-EVERY outbound string (title, body, comment, label) passes through the
-filter first:
-
-```bash
-printf '%s' "$PAYLOAD" | python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"
-```
-
-Send the OUTPUT of that pipe, never the input. `scripts/redact.py` is
+EVERY outbound string (title, body, comment, label) goes through the
+redaction pass in `${CLAUDE_PLUGIN_ROOT}/references/redaction.md`
+first: draft the payload in full, apply the families in the order the
+reference lists, and send the RESULT, never the draft. That document is
 the single source of the redaction patterns — do not reimplement,
-inline, or "remember" them. On any doubt about a payload, run
-`... redact.py --check` on it; if it exits non-zero, drop the doubtful
-paragraph entirely and note `[redacted]`. When unsure whether something
-is a credential, drop it.
+inline, or "remember" them. On any doubt about a payload, run the
+reference's check (its yes/no form) on it; if it comes back dirty, drop
+the doubtful paragraph entirely and note `[redacted]`. When unsure
+whether something is a credential, drop it.
 
-If the redaction pipe itself fails (python3 or redact.py unavailable,
-non-zero exit, or empty output on non-empty input), post NOTHING for
-that payload — a warning locally, never the raw text.
+If the pass cannot be completed (the payload is too long to read in
+full, a family cannot be applied with confidence, the result cannot be
+shown), post NOTHING for that payload — a warning locally, never the
+raw text.
 
 ### Failures and courtesy
 
@@ -267,12 +265,12 @@ that payload — a warning locally, never the raw text.
   rejection) degrade to a one-line warning and the workflow continues —
   the markdown files are already written and canonical. Tracker
   failures are never blockers.
-- After ANY sync attempt (success or failure), record it through the
-  ledger script — never by editing the state file:
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --provider <provider> --last-sync "ok"`
-  (or `--last-sync "failed: <one-line reason>"`), adding
-  `--bind "<plan path>#<phase id>=<provider>:<key>"` for every binding
-  written, so `/cfm:status` renders truthfully.
+- After ANY sync attempt (success or failure), record it with the
+  `tracker` operation in `${CLAUDE_PLUGIN_ROOT}/references/state.md` —
+  never by a freehand edit of the state file: provider `<provider>`,
+  last_sync `"ok"` (or `"failed: <one-line reason>"`), and a bind
+  `<plan path>#<phase id>=<provider>:<key>` for every binding written,
+  so `/cfm:status` renders truthfully.
 - Batch: one task per phase, one comment per phase gate. Never one
   comment per test file, per reviewer, or per dispatch.
 - Volume: a backfill or a reconcile can mean many calls, so confirm the

@@ -8,9 +8,10 @@ compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code ta
 
 You are the ORCHESTRATOR. You hold the phase discipline, dispatch
 subagents, and keep the ledgers. Every loop script and probe comes from a
-dispatched agent — there is no "one-line change" exception, and in cfm mode
-(`mode: enforced`, the default) the guard refuses the write; a refusal
-means dispatch.
+dispatched agent — there is no "one-line change" exception. The doctrine
+block in CLAUDE.md, the generated settings denies and the agent files'
+tool limits are what keep product code out of the main session; honour
+them without being told twice.
 
 This skill ends at the finding. It never applies a fix and never asks an
 agent to: the fix is a feature like any other and goes through `/cfm:plan`
@@ -33,17 +34,21 @@ trains the habit that loses the next bug. If you catch yourself typing
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — load config and state
 
-1. Config: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
-   — no config → send the user to `/cfm:init` and STOP; validation errors →
-   send them to `/cfm:doctor` and STOP.
-2. State: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" show` (a pure read). The ledger is written only
-   through that script; the schema and command table are in
-   `${CLAUDE_PLUGIN_ROOT}/skills/implement-phase/references/state-and-resume.md`.
+1. Config: load the effective config per
+   `${CLAUDE_PLUGIN_ROOT}/references/config.md` — no config → send the
+   user to `/cfm:init` and STOP; validation errors → send them to
+   `/cfm:doctor` and STOP.
+2. State: `show` per `${CLAUDE_PLUGIN_ROOT}/references/state.md` (a pure
+   read). The ledger is written only by this orchestrator, only through
+   the operations in that document, and never while a subagent runs; the
+   schema and operation table are there too.
    A diagnosis is recorded as a phase whose id is `diagnose-<slug>`, so a
    dead session resumes from the ledger exactly like an implementation
    phase does.
@@ -63,21 +68,21 @@ they did, what happened, what they expected. That sentence is the thing the
 loop in step 3 has to be able to detect, and every later phase checks back
 against it. Wrong symptom means right loop for the wrong bug.
 
-Open the phase with that sentence as its description:
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" init --id diagnose-<slug> --description "<the symptom, verbatim>" --layers <layers the bug touches>`.
+Open the phase with that sentence as its description — `init` per
+state.md: id `diagnose-<slug>`, description the symptom verbatim, layers
+the ones the bug touches. `init` keeps `notes`, so clear the keys an
+earlier diagnosis left behind first.
 
 ## Showing commands and output
 
 Everything this skill surfaces — a loop invocation, its output, a captured
-trace, a probe's log line — goes through redaction first:
+trace, a probe's log line — goes through redaction first: capture the
+command's output (`2>&1`), apply the redaction pass in
+`${CLAUDE_PLUGIN_ROOT}/references/redaction.md`, and show only its output.
 
-```bash
-<command producing the text> 2>&1 | python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"
-```
-
-Show the pipe's OUTPUT and nothing else. `scripts/redact.py` is the single
+Show the pass's OUTPUT and nothing else. That document is the single
 source of redaction patterns; carry no pattern list of your own. If the
-pipe fails, show nothing — fail closed. Build loops against environment
+pass cannot be completed, show nothing — fail closed. Build loops against environment
 variables so credentials stay in the environment rather than in the text.
 If redacted output is genuinely not enough to diagnose the bug, say so and
 ask the user rather than widening what you print.
@@ -140,8 +145,8 @@ invocation and redacted output shown, and is:
 - **Fast**: seconds.
 - **Agent-runnable**: it runs unattended.
 
-Record the command: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key red_command --value "<the exact invocation>"`.
-**No red command, no phase 2.** Reading code
+Record the command — `note` per state.md: key `red_command`, value the
+exact invocation. **No red command, no phase 2.** Reading code
 to build a theory before this command exists is the exact failure this
 skill prevents — if you catch yourself doing it, stop and return to
 building the loop.
@@ -190,8 +195,8 @@ Tuesday"), and they know what has already been ruled out. Cheap
 checkpoint, large payoff. Proceed with your own ranking if they are away —
 this informs, it does not block.
 
-Record the list (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key hypotheses --value "<the ranked list>"`)
-so a resumed session inherits the ranking.
+Record the list (`note` per state.md: key `hypotheses`, value the ranked
+list) so a resumed session inherits the ranking.
 
 ## Phase 4 — instrument
 
@@ -206,9 +211,9 @@ Tool order:
 3. Logging broadly and grepping afterwards produces noise, not signal.
 
 **Tag every debug line** with a unique marker — `[DEBUG-a4f2]` — chosen
-once per diagnosis and recorded
-(`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key debug_marker --value "[DEBUG-a4f2]"`). Cleanup in phase 6 is then a
-single grep, and untagged instrumentation is what survives into main.
+once per diagnosis and recorded (`note` per state.md: key `debug_marker`,
+value `[DEBUG-a4f2]`). Cleanup in phase 6 is then a single grep, and
+untagged instrumentation is what survives into main.
 
 **Performance regressions take a different branch.** Logs mislead on
 timing. Establish a baseline measurement first (a timing harness, a
@@ -245,13 +250,11 @@ implicates — a pointer for the plan, not a diff. Name where the fix lives;
 do not describe the change, and do not dispatch anyone to make it.
 
 Record all three so a later `/cfm:plan`, even in a fresh session, inherits
-them from the ledger:
+them from the ledger — three `note` operations per state.md:
 
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key root_cause --value "<the hypothesis, and the evidence that confirmed it>"
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key regression_seam --value "<the seam, or: none — <why>>"
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" note --key fix_scope --value "<files and functions implicated>"
-```
+- key `root_cause`, value the hypothesis and the evidence that confirmed it
+- key `regression_seam`, value the seam, or `none — <why>`
+- key `fix_scope`, value the files and functions implicated
 
 ## Phase 6 — cleanup gate
 
@@ -295,23 +298,24 @@ Every item verified before this is done:
 
    g. **Fix scope** — the files and functions implicated. Where, not what.
 
-   h. **Token usage chart** — the output of `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" report`, pasted
-      verbatim (fenced block included) after item 3 below has marked the phase complete.
+   h. **Token usage chart** — the Markdown table from `report` per
+      state.md, rendered in full (warning line included) after item 3
+      below has marked the phase complete.
 
    i. **Your next step** — the question in item 5.
 
 2. Update `PROGRESS.md` (config `progress_log`) with a newest-first entry
    whose **Carried forward** section names every deferred obligation: a
    missing seam, a hypothesis left untested, a harness kept on purpose.
-3. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" carry "<obligation>" ...` for every
-   item in the Carried-forward section, then
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" complete --gates plan-fix`.
+3. `carry` per state.md with every item in the Carried-forward section,
+   then `complete` per state.md with gates `plan-fix`.
    A diagnosis leaves no diff, so the implementation gates (`verify_full`,
    git) do not apply; the one pending gate is the user's decision below.
 4. Sync the tracker if one is connected, per the adapter contract in
-   `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`, piping outbound text through
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` and sending only the
-   pipe's output. Failure is a one-line warning, never a blocker.
+   `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md`: apply the redaction pass in
+   `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` to every outbound
+   payload and send only its output; if the pass cannot be completed, post
+   nothing. Failure is a one-line warning, never a blocker.
 5. Ask, with the `AskUserQuestion` tool, exactly one question — "Plan a
    fix for these findings now?" — with two options:
    - **Yes, plan the fix** → invoke the `cfm:plan` skill through the
@@ -332,7 +336,7 @@ Every item verified before this is done:
   behaviour. The only code this skill causes to exist is the loop and the
   probes, and the probes are reverted before the report.
 - The orchestrator dispatches every loop and probe — it writes no code
-  itself; in cfm mode the guard refuses it ("is product code").
+  itself; product code is off-limits to the main session by doctrine.
 - Phase order holds: a hypothesis without a red command, or a root cause
   without a confirmed prediction, means going back rather than forward.
 - Never starts `/cfm:implement-phase`. The only skill it may invoke is
@@ -341,6 +345,8 @@ Every item verified before this is done:
   loop is one scoped command by design.
 - Never mutate git; never read `secret_globs` files, even to diagnose them.
 - One writer: only this orchestrator writes `PROGRESS.md`, and the state
-  file is written only through `scripts/state.py` — never by hand.
-- Every command, output, and artifact shown passes through
-  `scripts/redact.py` first.
+  file is written only through the operations in
+  `${CLAUDE_PLUGIN_ROOT}/references/state.md` — never ad hoc, never while
+  a subagent runs.
+- Every command, output, and artifact shown passes through the redaction
+  pass in `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` first.

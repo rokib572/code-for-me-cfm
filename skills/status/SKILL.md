@@ -11,32 +11,41 @@ or any project file while executing this skill.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-
-If it exits non-zero, STOP and show its stderr message verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — locate state
 
 1. Read `.cfm-workflow.yml` at the project root. If it does not exist,
    report: "No cfm configuration here yet — run `/cfm:init` to set up the
-   workflow." and stop.
-2. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" show`. If the config's `state_file` (default
-   `.cfm/state.json`) does not exist, the output is the empty seed
-   (no phase): report "cfm is configured but no phase has started —
-   `/cfm:plan` to plan a feature or `/cfm:implement-phase <description>`
-   to start one." and stop. If the command exits 1, the file is
-   unreadable: show its error and recommend `/cfm:doctor` — never repair
-   it here.
+   workflow." and stop. Otherwise load the merged config per
+   `${CLAUDE_PLUGIN_ROOT}/references/config.md` ("load and validate",
+   then "read one key" for `mode`, `review.scope`, `state_file`). A
+   config that fails validation still gets a status: show the errors,
+   recommend `/cfm:doctor`, and continue with the defaults (`enforced`,
+   `phase`, `.cfm/state.json`).
+2. Read the state ledger with the `show` operation in
+   `${CLAUDE_PLUGIN_ROOT}/references/state.md`. If the config's
+   `state_file` (default `.cfm/state.json`) does not exist, the result is
+   the empty seed (no phase): report "cfm is configured but no phase has
+   started — `/cfm:plan` to plan a feature or `/cfm:implement-phase
+   <description>` to start one." and stop. If the file is unreadable
+   (invalid JSON, non-object top level): show the error from the
+   reference and recommend `/cfm:doctor` — never repair it here.
 
 ## Step 2 — render
 
-From the `show` output, present, in this order, skipping empty sections:
+From the state, present, in this order, skipping empty sections:
 
 0. **Mode** — one line: the cfm mode from the merged config (`enforced`
    unless the file says otherwise) and what it means for this session —
-   `enforced`: the guard refuses main-session writes to product code;
-   `advisory`: the doctrine is injected, the guard is silent; `off`: no
-   cfm context. `/cfm:mode` changes it.
+   `enforced`: the doctrine in CLAUDE.md forbids main-session writes to
+   product code, every edit is a dispatch; `advisory`: the doctrine
+   stands as a preference, a main-session write is allowed; `off`: no
+   doctrine. Nothing refuses a write at runtime in any mode. `/cfm:mode`
+   changes it.
 1. **Current phase** — id, description, and the plan file it references.
 2. **Pipeline cursor** — per layer: coder done? tests written/run (which
    files)? Then the review gates and their PASS/FAIL — from
@@ -45,10 +54,10 @@ From the `show` output, present, in this order, skipping empty sections:
 3. **Pending human gates** — anything waiting on the user (full test suite,
    git actions per level, next-phase approval).
 4. **Carried forward** — every deferred obligation from state, verbatim,
-   then the code-anchored half of the same ledger. Run
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/debt_scan.py" --project-dir "$(pwd)"`
-   (pure read) and add one line: `<total> cfm-debt markers, <no_trigger>
-   with no upgrade trigger`. List the `no_trigger` ones as
+   then the code-anchored half of the same ledger. Run the whole-repo
+   debt scan in `${CLAUDE_PLUGIN_ROOT}/references/scans.md` (pure read)
+   and add one line: `<total> cfm-debt markers, <no_trigger> with no
+   upgrade trigger`. List the `no_trigger` ones as
    `file:line — <ceiling>` — a shortcut naming a ceiling but no trigger to
    revisit it is the one that rots into "later means never". Zero markers
    renders nothing; the section keeps skipping when empty.
@@ -61,8 +70,11 @@ From the `show` output, present, in this order, skipping empty sections:
    unbound (those get tasks on the next sync). The plan file is the
    authority here, not state's `tracker.tasks` cache. Reading is all this
    step does — never call the tracker from `/cfm:status`.
+7. **Tokens** — when `tokens.dispatches` is non-empty, the phase token
+   table from section 5 of `references/state.md`, one row per dispatch,
+   totals suffixed `+` where a dispatch has no usage. Never estimate a
+   missing number; `—` is the honest cell.
 
-The full state schema lives in the implement-phase skill's
-`references/state-and-resume.md`. Render whatever fields exist and do not
-invent missing ones; resume itself belongs to `/cfm:implement-phase`, not
-to this skill.
+The full state schema is `${CLAUDE_PLUGIN_ROOT}/references/state.md`.
+Render whatever fields exist and do not invent missing ones; resume itself
+belongs to `/cfm:implement-phase`, not to this skill.

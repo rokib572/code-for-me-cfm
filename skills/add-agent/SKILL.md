@@ -13,12 +13,15 @@ discipline. This skill owns the custom-agent flow — `cfm:init` and
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — load config
 
-Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+Load and validate the effective config by hand, following "Load and
+validate the config" in `${CLAUDE_PLUGIN_ROOT}/references/config.md`.
 
 - No config → tell the user to run `/cfm:init` first and STOP.
 - Validation errors → show them, send the user to `/cfm:doctor`, and STOP
@@ -29,7 +32,8 @@ Run: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd
 Ask one at a time, each via the AskUserQuestion tool:
 
 1. **name** — kebab-case identifier. Reject anything that collides with an
-   existing agent in config (roster or custom) and re-ask.
+   existing agent in config (roster or custom) or with a shipped plugin
+   agent (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) and re-ask.
 2. **purpose** — one line. This exact sentence is shown in dispatch briefs,
    so it must say what the agent does, not what it is.
 3. **model** — present a live-fetched model list (check what models
@@ -57,7 +61,7 @@ Infer the remaining fields from the purpose, then ONE AskUserQuestion:
   justification for every addition.
 - **layers** — default: all project layers. When customizing, offer the
   choices from the config's existing layer names and validate against
-  them — never free text (the validator rejects unknown layers).
+  them — never free text (validation rejects unknown layers).
 - **owns_commands** — default `[]`.
 
 If the user customizes, ask only about the fields they want changed.
@@ -88,24 +92,20 @@ If the user customizes, ask only about the fields they want changed.
 2. Apply ONLY on explicit approval. Edit `.cfm-workflow.yml` surgically —
    never rewrite untouched sections, never reformat, keep the user's
    comments.
-3. Validate: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)"`
-   — if it errors on what you wrote, fix your edit (not the user's other
-   config) until clean.
+3. Validate: re-run the load of step 1 ("Validate after a write" in
+   config.md) and expect zero errors — if it errors on what you wrote, fix
+   your edit (not the user's other config) until clean.
 4. **Render the agent file** — the thing that actually enforces the tool
-   limits:
-
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agent_file.py" --project-dir "$(pwd)" --agent <name> --write
-   ```
-
-   It writes `.claude/agents/<name>.md` with frontmatter (name,
-   description, tools, model alias) rendered from the config entry and a
-   default discipline body. Show the file. The body is the user's to edit
-   afterwards; a later `--write` refreshes only the frontmatter.
-5. Auto-run the doctor: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" --project-dir "$(pwd)"`
-   and show the report. Check 4 fails a custom agent whose file is missing
-   or whose frontmatter drifted from config. A change that turns the doctor
-   red gets flagged immediately with the offer to revert the diff.
+   limits: follow `${CLAUDE_PLUGIN_ROOT}/references/agent-file.md` for
+   `<name>`. It writes `.claude/agents/<name>.md` with frontmatter (name,
+   description, tools, model alias) rendered from the config entry and
+   the default discipline body. Show the file. The body is the user's to
+   edit afterwards; a later render refreshes only the frontmatter.
+5. Auto-run the doctor: run checks 0-9 by hand per
+   `${CLAUDE_PLUGIN_ROOT}/references/doctor.md` and show the report.
+   Check 4 fails a custom agent whose file is missing or whose frontmatter
+   drifted from config. A change that turns the doctor red gets flagged
+   immediately with the offer to revert the diff.
 
 ## Dispatch
 

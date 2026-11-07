@@ -9,25 +9,28 @@ compatibility: Requires Claude Code (terminal, IDE extension, or Desktop Code ta
 You are the ORCHESTRATOR. You plan, dispatch subagents, verify, and keep
 the ledgers. You never implement — no "small change" exception. Every line
 of product code, test code, and scaffold comes from a dispatched agent. In
-cfm mode (`mode: enforced`, the default) the PreToolUse guard refuses a
-product write from this session; a refusal means dispatch, never a
-workaround.
+cfm mode (`mode: enforced`, the default) the doctrine rendered into
+CLAUDE.md forbids a product write from this session; the urge to make one
+means dispatch, never a workaround.
 
 ## Step 0 — environment gate
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/require-claude-code.sh"`
-If it exits non-zero, STOP and show its stderr verbatim.
+Run `test "$CLAUDECODE" = "1"` with Bash. If it fails, STOP and show
+exactly: "cfm runs only in Claude Code (terminal, IDE, or the Desktop Code
+tab). Your project config and brief are untouched — open this repo in
+Claude Code to continue."
 
 ## Step 1 — load config and state
 
-1. Config: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cfm_config.py" --project-dir "$(pwd)" --json`
+1. Config: load the effective config per
+   `${CLAUDE_PLUGIN_ROOT}/references/config.md`
    — no config → send the user to `/cfm:init` and STOP; validation errors →
    send them to `/cfm:doctor` and STOP (never execute on a broken config).
-2. State: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" show`
-   (a pure read). The ledger is written ONLY through that script — never
-   by hand-editing or Writing the JSON. Every boundary below names its
-   command; the schema and the full command table are in
-   `references/state-and-resume.md`.
+2. State: the `show` operation in `${CLAUDE_PLUGIN_ROOT}/references/state.md`
+   (a pure read). The ledger is written ONLY through that document's
+   operations — never by hand-editing or Writing the JSON freehand. Every
+   boundary below names its operation; the schema and the full operation
+   table are in `references/state-and-resume.md`.
 
 ## Step 2 — route by argument
 
@@ -64,12 +67,13 @@ If it exits non-zero, STOP and show its stderr verbatim.
   5. Continue into step 3 with that task file as the phase scope.
 - **With a description** → NEW phase. If state shows another phase in
   flight, warn with its id and progress, and make the user choose: resume
-  it, or explicitly abandon it (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" abandon`, plus a PROGRESS.md
-  carried-forward entry) before starting the new one. On abandon, if a tracker is connected
-  and config `tracker.sync.transition_status` is true, record the
-  abandonment on the phase's task per the adapter contract in
-  `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` (warning-only on failure; record
-  the outcome with `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --last-sync "ok"` or `--last-sync "failed: <reason>"`).
+  it, or explicitly abandon it (state.md `abandon`, plus a PROGRESS.md
+  carried-forward entry) before starting the new one. On abandon, if a
+  tracker is connected and config `tracker.sync.transition_status` is
+  true, record the abandonment on the phase's task per the adapter
+  contract in `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` (warning-only on
+  failure; record the outcome per state.md `tracker` with last_sync
+  `"ok"` or `"failed: <reason>"`).
 
 ## Step 3 — the plan gate
 
@@ -100,8 +104,8 @@ canonical anyway.
 
 Then build the dispatch plan: per layer (in the config's `layers` order),
 the agents to dispatch, their exact file scopes, and the `review_gates`
-that will run — all taken from the step 1 JSON, which carries ONLY
-enabled agents (the loader drops a disabled agent and its gates). A
+that will run — all taken from the step 1 effective config, which carries
+ONLY enabled agents (the load drops a disabled agent and its gates). A
 disabled agent appears nowhere in the plan, the run, or the report.
 
 What you present depends on config `implement.plan_gate` (default true):
@@ -127,21 +131,21 @@ still makes the round trip.
 
 Plan mode has exited; writes are allowed now.
 
-Open the phase in the ledger before any dispatch:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" init --id <phase id> --description "<one line>" --plan <plan path or omit> --layers <layers in config order>
-```
+Open the phase in the ledger before any dispatch — state.md `init`: id
+<phase id>, description "<one line>", plan <plan path, or omit>, layers
+<layers in config order>.
 
 It refuses when another phase is in flight (step 2 already resolved that).
 Then, if a tracker is connected (config `tracker.provider` set)
 and `tracker.sync.transition_status` is true, transition the phase's task
 — the one named by its binding line, never one matched by title — to
 in-progress per the adapter contract in
-`${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` — any outbound text piped through
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` first; failure is a
-one-line warning, never a blocker; record the outcome with
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --provider <provider> --last-sync "ok"` (or `"failed: <reason>"`).
+`${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` — any outbound text goes through
+the redaction pass in `${CLAUDE_PLUGIN_ROOT}/references/redaction.md`
+first, and only its output is sent; if the pass cannot be completed, post
+nothing. Failure is a one-line warning, never a blocker; record the
+outcome per state.md `tracker`: provider <provider>, last_sync `"ok"`
+(or `"failed: <reason>"`).
 
 ## Step 5 — autonomy
 
@@ -172,11 +176,11 @@ dispatched by their PROJECT agent file, `.claude/agents/<name>.md`, which
 tool limits. If it is missing, stop and say so (the doctor fails on it);
 never fall back to a general subagent, which would carry every tool.
 
-**Disabled agents do not exist.** Only agents in the step 1 JSON take
-part. A step below whose agent is absent is skipped without comment: never
-handed to another agent, never done by the orchestrator, never counted
-against "done". Never read `.cfm-workflow.yml` directly to find agents —
-the raw file still lists the disabled ones.
+**Disabled agents do not exist.** Only agents in the step 1 effective
+config take part. A step below whose agent is absent is skipped without
+comment: never handed to another agent, never done by the orchestrator,
+never counted against "done". Never read `.cfm-workflow.yml` directly to
+find agents — the raw file still lists the disabled ones.
 
 For each layer, in order:
 
@@ -188,27 +192,24 @@ For each layer, in order:
    resolved absolute paths of `skills/testing/SKILL.md` and
    `skills/simplicity/SKILL.md` under the plugin root, the exact file scope,
    and the resolved command slots it owns. Immediately before the
-   dispatch: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" dispatch --agent coder --layer <layer>`. After it
-   finishes:
-
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent coder --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --files <every path it touched>
-   ```
+   dispatch: state.md `dispatch` — agent coder, layer <layer>. After it
+   finishes, state.md `record` — agent coder, layer <layer>, purpose
+   "<one line>", model <config model id>, usage from the handback, files
+   <every path it touched>.
 
    Record the moment the agent's result is in hand, from what came with
-   it: a foreground result carries its own usage (`total_tokens`, duration
-   — pass them as `--total`/`--duration-ms`); a background agent's result
-   IS its **task-notification**, whose `<usage>` block (`<subagent_tokens>`,
-   `<duration_ms>`) you pass verbatim as `--usage`. A background LAUNCH
-   acknowledgement ("agent launched in background") is not a result —
-   record when the notification lands, not at launch. If the handback has
-   no numbers, run `record` without the token flags — the ledger stores
-   null and the report marks the total with "+"; when the usage turns up
-   later, backfill that entry with
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" usage --agent <name> --layer <layer> --usage '<usage>…</usage>'`.
-   Pass only numbers the platform actually reported; never estimate.
-   **Never end the turn or hold the next dispatch to wait for usage
-   numbers** — record once, backfill when it arrives, and continue.
+   it: a foreground result carries its own usage (`total_tokens`,
+   duration); a background agent's result IS its **task-notification**,
+   whose `<usage>` block (`<subagent_tokens>`, `<duration_ms>`) you take
+   verbatim. A background LAUNCH acknowledgement ("agent launched in
+   background") is not a result — record when the notification lands, not
+   at launch. If the handback has no numbers, `record` without them — the
+   ledger stores null and the report marks the total with "+"; when the
+   usage turns up later, backfill that entry per state.md `usage` — agent
+   <name>, layer <layer>, the usage block. Pass only numbers the platform
+   actually reported; never estimate. **Never end the turn or hold the
+   next dispatch to wait for usage numbers** — record once, backfill when
+   it arrives, and continue.
 2. **Dispatch e2e-test** (only when it is in the roster) to write and run tests for that layer's work —
    scoped to its own new test files via `commands.test_scoped`. The brief
    carries the phase's **seams** verbatim from the plan (the public
@@ -220,20 +221,19 @@ For each layer, in order:
    them literally and the Read fails. A plan with no seams line predates
    this field: derive the seams with the user at step 3 and record them in
    the brief. After it finishes (usage exactly as for the coder — never a
-   wait):
-
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent e2e-test --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --tests-written <paths> --tests-passed <paths>
-   ```
+   wait): state.md `record` — agent e2e-test, layer <layer>, purpose
+   "<one line>", model <config model id>, usage from the handback,
+   tests_written <paths>, tests_passed <paths>.
 3. **Review** — when config `review.scope` is `layer`, run the review
    pipeline now over this layer's touched files (see below). When it is
    `phase` (the default), continue to the next layer; the pipeline runs
    once after the last layer, over the whole phase diff, which is where
    cross-layer findings (an unscoped query in the API layer against a
    table the database layer just added) can actually be seen.
-4. The `dispatch` and `record` calls above ARE the boundary writes —
+4. The `dispatch` and `record` operations above ARE the boundary writes —
    dispatch sent, result recorded, tests written and passed — so a killed
-   session resumes cleanly. Skipping one is a ledger that lies.
+   session resumes cleanly. Skipping one is a ledger that lies. Write the
+   ledger between dispatches, never while a subagent runs.
 
 **The review pipeline** (once per phase, or per layer under `scope:
 layer`): run exactly as `review_gates` declares — a nested list is one
@@ -244,13 +244,13 @@ FAIL**: re-dispatch the coder with the reviewer's raw actionable output
 (verbatim findings, not your summary), then re-run ONLY the failed gate.
 Repeat until green or the same finding fails twice — two identical
 failures mean a plan problem: stop and consult the user. Record each gate
-verdict as it lands: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" gate --agent <reviewer> --verdict pass|fail`
-(add `--layer <layer>` under `review.scope: layer`). Every reviewer
+verdict as it lands: state.md `gate` — agent <reviewer>, verdict pass|fail
+(plus layer <layer> under `review.scope: layer`). Every reviewer
 dispatch — re-runs and the mechanical-gate included — is also a token
-entry, recorded exactly like the coder's:
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent <reviewer> --purpose "review: <scope>" --model <config model id> --usage '<usage>…</usage>'`
-(plus `--layer <layer>` under `review.scope: layer`), so the chart's
-Totals cover the reviews too.
+entry, recorded exactly like the coder's: state.md `record` — agent
+<reviewer>, purpose "review: <scope>", model <config model id>, usage from
+the handback (plus layer <layer> under `review.scope: layer`), so the
+report's Totals cover the reviews too.
 
 ## Step 7 — the phase gate (always stop here)
 
@@ -265,19 +265,17 @@ Totals cover the reviews too.
       shipped, tests written/passed (scoped), gate verdicts, anything
       carried forward.
 
-   b. **Token usage chart** — the output of
-      `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" report`, pasted verbatim, fenced block included (run it AFTER item 3
-      below marks the phase complete, so the wall-clock time is final).
-      `report` backfills on its own: it reads every cfm agent's
-      task-notification from the session transcripts on disk, fills the
-      entries recorded before their usage landed, and adds any run that
-      was never recorded. A "⚠ N of M dispatches have no usage" line that
-      survives means a foreground result carried numbers you did not pass —
-      `usage` them and re-run `report`; never replace the chart with a
-      hand-summed figure.
-      One colored stacked bar per dispatch (🟦 input, 🟧 output, ⬜ split
-      not reported), re-dispatches as separate bars, a Totals bar over the
-      non-null values with "+" marking a sum that had a null in it.
+   b. **Token usage table** — the state.md `report` (section 5), rendered
+      exactly as that section specifies (run it AFTER item 3 below marks
+      the phase complete, so the wall-clock time is final). It is a pure
+      read of the ledger: one row per dispatch in ledger order,
+      re-dispatches as separate rows, a Totals row over the non-null
+      values with "+" marking a sum that had a null in it. Nothing is
+      harvested from disk and nothing is backfilled on its own — every
+      number comes from `record` and `usage`. A "⚠ N of M dispatches have
+      no usage" line that survives means a result carried numbers you did
+      not record — `usage` them and re-render; never replace the table
+      with a hand-summed figure.
 
    c. **Your next steps** — the human-gate reminders from item 5 below:
       run `verify_full`, review the diff, git per their level, switch
@@ -287,27 +285,28 @@ Totals cover the reviews too.
    **Carried forward** section listing EVERY deferred obligation — debts,
    skipped edge cases, open questions. No entry, no done.
 
-   Include the code-anchored debts too: run
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/debt_scan.py" --project-dir "$(pwd)" --paths <the phase's touched files>`
-   and add each marker as `file:line — <ceiling>; revisit when <upgrade>`,
-   tagging any with `no_trigger` true as **no trigger**. Every obligation
-   in this section also goes into the ledger, one call:
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" carry "<obligation>" "<obligation>" ...` — that is what resume
-   and `/cfm:status` read. Scoping to the
-   phase's touched files keeps the entry about what this phase deferred
-   rather than re-listing the whole repo's ledger, which `/cfm:status`
-   already renders.
-3. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" complete` — marks the phase complete with its timestamp and
+   Include the code-anchored debts too: run the debt scan in
+   `${CLAUDE_PLUGIN_ROOT}/references/scans.md` scoped to the phase's
+   touched files and add each marker as `file:line — <ceiling>; revisit
+   when <upgrade>`, tagging any with `no_trigger` true as **no trigger**.
+   Every obligation in this section also goes into the ledger, one
+   operation: state.md `carry` with every obligation verbatim — that is
+   what resume and `/cfm:status` read. Scoping to the phase's touched
+   files keeps the entry about what this phase deferred rather than
+   re-listing the whole repo's ledger, which `/cfm:status` already
+   renders.
+3. State.md `complete` — marks the phase complete with its timestamp and
    sets the pending human gates (`carried_forward` stays visible for the
    next phase).
 4. Sync the tracker if connected (config `tracker.provider` set): follow
    the adapter contract in `${CLAUDE_PLUGIN_ROOT}/CONNECTORS.md` —
    transition the phase's bound task and post ONE phase-gate note (test
-   evidence, carried-forward), piping every outbound payload through
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redact.py"` (the single
-   redaction source) and sending only the pipe's OUTPUT. Tracker failure
-   is a one-line warning, never a blocker; record the outcome with
-   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" tracker --last-sync "ok"` (or `"failed: <reason>"`).
+   evidence, carried-forward), applying the redaction pass in
+   `${CLAUDE_PLUGIN_ROOT}/references/redaction.md` (the single redaction
+   source) to every outbound payload and sending only its OUTPUT; if the
+   pass cannot be completed, post nothing. Tracker failure is a one-line
+   warning, never a blocker; record the outcome per state.md `tracker`
+   with last_sync `"ok"` (or `"failed: <reason>"`).
 5. Remind the user of THEIR commands: run `verify_full`, review the diff,
    and git per their level. NEVER run these yourself.
 6. STOP. Never auto-start the next phase — starting it is a human gate.
@@ -315,8 +314,10 @@ Totals cover the reviews too.
 ## Hard limits
 
 - Orchestrator never writes product code, tests, or scaffold — dispatch.
-  In cfm mode the guard refuses it ("is product code"); the ledgers,
-  PROGRESS.md, the plan file and CLAUDE.md stay yours to write.
+  In cfm mode the CLAUDE.md doctrine forbids it ("is product code"); the
+  generated settings denies and the agent files' tool limits are the
+  mechanisms, and this edition has no runtime guard beyond them. The
+  ledgers, PROGRESS.md, the plan file and CLAUDE.md stay yours to write.
 - No file writes, no state writes, no tracker WRITES, and no dispatches
   while in plan mode; the phase is committed only after the plan-mode
   approval. Reading a bound task for context is a read, and allowed.
@@ -325,8 +326,9 @@ Totals cover the reviews too.
 - Never run `verify_full`, never touch git mutations, never read
   `secret_globs` files.
 - One writer: only this orchestrator writes PROGRESS.md, and the state
-  file is written only through `scripts/state.py` — never a hand-written
-  or Write-tool JSON, which the doctor's check 9 would reject.
+  file is written only through the `references/state.md` operations,
+  validated before every save — a malformed ledger fails the doctor's
+  check 9.
 - Token reporting is mandatory after every dispatch when config
   `token_reporting` is true: "dispatch: <agent>(<layer>) — <n> tokens;
   phase total: <sum>" (or "— tokens not reported" when none came back).

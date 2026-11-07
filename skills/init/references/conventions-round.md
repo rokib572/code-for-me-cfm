@@ -9,8 +9,8 @@ value is written here — conventions live in the rules file, which
 
 ## Entry point per scenario
 
-- **Greenfield** — after `scaffold.py` has rendered the R1/R2 seed and
-  BEFORE the coder is dispatched for the stack skeleton, so the skeleton
+- **Greenfield** — after the workflow scaffold has rendered the R1/R2
+  seed and BEFORE the coder is dispatched for the stack skeleton, so the skeleton
   is built to the conventions (`scaffold.md` step 1.5).
 - **Existing / scaffolded** — after the step-3 config write creates the
   seed. PRE-FILL every option from the deep scan's convention-conformance
@@ -79,7 +79,9 @@ Two hard constraints:
 
 - A `reviewer(<name>)` owner MUST be an enabled agent — doctor check 6
   fails on a missing or disabled one. If the preferred owner is not
-  enabled, fall down the list to one that is.
+  enabled, fall down the list to one that is. No enabled reviewer and no
+  lint slot at all → stop and send the user to `/cfm:configure agents`;
+  a rule with no live owner is never written.
 - NEVER invent a lint rule id. If you are not sure the rule exists in this
   stack's linter, assign a reviewer. An honest reviewer beats a fake
   lint — the same principle as never faking a green command.
@@ -177,9 +179,10 @@ holding the concrete directory and file template for a new feature in that
 layer. Append it to each layer's CLAUDE.md under `claude_md.layout:
 router`, or to the root CLAUDE.md under `single`.
 
-`scaffold.py` stamps rendered files as "rendered from .cfm-workflow.yml";
-this section is not, so it carries its own marker so provenance stays
-honest:
+The scaffold render stamps its files "rendered from .cfm-workflow.yml"
+inside the `<!-- cfm:begin -->` … `<!-- cfm:end -->` region; this
+section is not rendered, so it goes OUTSIDE that region and carries its
+own marker so provenance stays honest:
 
     <!-- authored by the cfm:init conventions round — not rendered from config -->
     ## Feature structure
