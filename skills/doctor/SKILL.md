@@ -27,8 +27,8 @@ Grep and short shell commands, quoting its message wording verbatim.
   checks 2-9 SKIP, not FAIL.
 - Never run `verify_full`, `test_scoped`, or a `migrate_*` slot; only
   `lint`, `lint_arch` and `typecheck` are ever executed.
-- Never read a file matching a `secret_globs` entry — names, `.gitignore`
-  lines only, and counts `.env.example` lines without printing one.
+- Never read a file matching a `secret_globs` entry — file names and
+  `.gitignore` lines only.
 
 ## Step 2 — render the report
 

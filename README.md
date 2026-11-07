@@ -220,7 +220,7 @@ Choices arrive bundled as **profiles**, and every profile value can be changed i
 | 4 | Roster: enabled agents' layers exist, review gates name enabled agents, single-owner command matrix holds, every agent's **file** grants the tools its config claims (the file is what Claude Code enforces; a custom agent without one fails), and nothing still references a disabled agent |
 | 5 | Models: every configured model id still resolves |
 | 6 | Rules: every rule declares an enforcement mechanism; toothless rules rejected |
-| 7 | Secrets: `.gitignore` covers the glob family, `.env.example` has no values, nothing secret is tracked, the generated `settings.json` denies are present (FAIL without them) and none is **stale** from an earlier config (FAIL: a raised git level must retract the old denies or it is silently ineffective), a pre-commit secret scan is present (WARN), and whether the OS-level sandbox layer is on |
+| 7 | Secrets: `.gitignore` covers the glob family, nothing secret is tracked, the generated `settings.json` denies are present (FAIL without them) and none is **stale** from an earlier config (FAIL: a raised git level must retract the old denies or it is silently ineffective), a pre-commit secret scan is present (WARN), and whether the OS-level sandbox layer is on |
 | 8 | Pipeline: the deny layer is present and not stale, the `CLAUDE.md` doctrine block is present and announces the configured mode, and a `pre-commit` review trigger has a hook to fire from |
 | 9 | State: the ledger validates against the schema in `references/state.md`, no orphaned in-flight phase |
 

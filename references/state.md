@@ -350,10 +350,6 @@ phase names a `plan` file that does not exist, and notes
 Render this at the phase gate, after `complete`, so the wall-clock time is
 final. It is a pure read of `tokens.dispatches` and `phase`.
 
-Transcript harvesting is dropped: the former script read background
-task-notifications back out of `~/.claude` session transcripts to fill
-missing usage; now every number comes from `record` and `usage` alone.
-
 1. Format numbers: null → `—`; ≥ 1,000,000 → one decimal plus `M`
    (`1.2M`); ≥ 1,000 → one decimal plus `k` (`36.2k`); otherwise as is.
    Format durations: null → `—`; round to whole seconds; `<m>m <s>s` when

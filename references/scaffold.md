@@ -362,11 +362,10 @@ _Avoid_: the near-synonyms this term replaces, so they stop reappearing.
 
 ## Template — `.env.example`
 
-Variable names only, values blank, always. The doctor's secrets check
-fails on any `NAME=value` line in it.
+Variable names only, values blank, always.
 
 ```
-# .env.example — variable names only, values stay empty — cfm doctor enforces this.
+# .env.example — variable names only, values stay empty.
 # Add a `NAME=` line in the same change that introduces the variable.
 ```
 
