@@ -284,18 +284,21 @@ error. No phase required.
 ### tracker — sync bookkeeping
 
 Inputs: optional `provider`, `last_sync` outcome text, `bind` pairs. No
-phase required. Create `tracker` as `{"provider": null, "last_sync": null, "tasks": {}}`
-when absent.
+phase required. When the `tracker` object is absent, it starts as
+`{"provider": null, "last_sync": null, "tasks": {}}`.
 
-1. `provider` given: set `tracker.provider` to it; an empty string means
-   null (a disconnect).
-2. `last_sync` given: set `tracker.last_sync` to
+1. `provider` given: `tracker.provider` becomes that name (the same slug
+   `.cfm-workflow.yml` carries under `tracker.provider`); an empty string
+   means null, which records a disconnect.
+2. `last_sync` given: `tracker.last_sync` becomes
    `{"outcome": <text>, "at": now}`; the text is `"ok"` or `"failed: <one-line reason>"`.
-3. Each bind is `<plan path>#<phase id>=<provider>:<key>` (a task file
-   binds as `docs/tasks/<slug>.md=<provider>:<key>`). Split on the FIRST
-   `=`; a pair with no `=` stops with
+3. Each bind pair names a plan phase or task file on the left and the
+   tracker's task key on the right: `<plan path>#<phase id>=<provider>:<key>`
+   (a task file binds as `docs/tasks/<slug>.md=<provider>:<key>`). Split on
+   the FIRST `=`; a pair with no `=` stops with
    `error: bind takes '<plan>#<phase>=<provider>:<key>', got '<pair>'`.
-   Set `tracker.tasks.<left>` to `<right>`, overwriting an old binding.
+   The left side becomes a key of `tracker.tasks` whose value is the right
+   side, replacing an earlier binding for the same key.
 
 `tracker.tasks` is a cache. The binding lines in the plan and task
 markdown files are the authority; on disagreement correct the cache from
@@ -303,8 +306,9 @@ the markdown, never the reverse.
 
 ### note — a free-form phase note
 
-Inputs: `key`, `value`. *Requires a phase.* Set `notes.<key>` to the value
-(create `notes` when absent), overwriting any earlier value for the key.
+Inputs: `key`, `value`. *Requires a phase.* `notes.<key>` becomes the value
+(the `notes` object starts empty when absent), replacing any earlier value
+for the key.
 
 ### complete — close the phase at the human gate
 
