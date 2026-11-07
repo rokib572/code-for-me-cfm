@@ -16,9 +16,9 @@ cfm versions, so existing ledgers stay valid.
 
 ## 1. Location and lifecycle
 
-- **Path:** the config key `state_file` in `.cfm-workflow.yml`, relative to
-  the project root. Default `.cfm/state.json`. A broken config still gets a
-  ledger: when the config does not load, use the default path.
+- **Path:** the `state_file` key of `.cfm-workflow.yml`, relative to
+  the project root. Default `.cfm/state.json`. A broken workflow file still
+  gets a ledger: when it does not load, use the default path.
 - **Missing file = empty seed.** Treat a missing file as this document and
   never create it just to read it:
 
@@ -65,14 +65,14 @@ cfm versions, so existing ledgers stay valid.
 | `tracker.last_sync` | object or null | `{outcome: "ok" | "failed: <reason>", at: ISO}` |
 | `tracker.tasks` | object | `"<plan path>#<phase id>": "<provider>:<key>"` — a cache; the plan's binding lines win |
 | `notes` | object | free-form `key: string` the next session needs (diagnose's `red_command`, `hypotheses`, `debug_marker`, `root_cause`, …) |
-| `pending_gates` | string[] | human gates set by `complete` |
+| `pending_gates` | string[] | human gates recorded by `complete` |
 
 A dispatch entry (`tokens.dispatches[]`):
 
 | Field | Type | Notes |
 |---|---|---|
 | `agent` | string | roster name: `coder`, `e2e-test`, `code-reviewer`, … |
-| `model` | string | the config model id the agent ran with |
+| `model` | string | the workflow file's model id the agent ran with |
 | `layer` | string or null | null for phase-scoped reviews |
 | `purpose` | string | one line (`review: <scope>` for reviewers) |
 | `input_tokens` | int or null | from the usage block, else null |
@@ -132,10 +132,10 @@ Annotated example, one layer done, review in progress:
 }
 ```
 
-Review verdicts live in `cursor.phase_gates` under config `review.scope:
-phase` (default) and in each layer's `gates` under `review.scope: layer`.
-Whichever applies, the other stays empty; resume reads the one the config
-names.
+Review verdicts live in `cursor.phase_gates` when `review.scope` is
+`phase` (the default) and in each layer's `gates` when it is `layer`.
+Whichever applies, the other stays empty; resume reads the one the
+workflow file names.
 
 ## 3. Operations
 
@@ -168,13 +168,13 @@ malformed.
 
 ### init — start a phase
 
-Inputs: `id`, `description`, `layers` (in config order), optional `plan`.
+Inputs: `id`, `description`, `layers` (in the workflow file's order), optional `plan`.
 
 1. Precondition: no phase in flight. Otherwise stop with
    `error: phase '<id>' is in flight — resume it with /cfm:implement-phase, or abandon it first`.
-2. Set `phase` to `{id, description, plan (or null), status: "in-flight",
+2. `phase` becomes `{id, description, plan (or null), status: "in-flight",
    started: now, completed: null}`.
-3. Set `cursor` to `{current_layer: <first layer>, layers: {}, phase_gates: {}}`,
+3. `cursor` becomes `{current_layer: <first layer>, layers: {}, phase_gates: {}}`,
    then ensure every named layer, in order.
 4. Reset `files_touched`, `open_questions`, `pending_gates` to `[]` and
    `tokens` to `{"phase_total": 0, "dispatches": []}`.
@@ -187,8 +187,8 @@ Inputs: `id`, `description`, `layers` (in config order), optional `plan`.
 
 Inputs: `agent`, optional `layer`. *Requires a phase.*
 
-1. With a layer: set `cursor.current_layer` to it; when the agent is
-   `coder`, ensure the layer and set its `coder` to `"dispatched"`.
+1. With a layer: `cursor.current_layer` becomes it; when the agent is
+   `coder`, ensure the layer and its `coder` becomes `"dispatched"`.
 2. Without a layer (a phase-scoped reviewer): nothing changes; skip the write.
 
 ### record — a dispatch result arrived
@@ -200,14 +200,14 @@ Inputs: `agent`, `purpose`, `model`, optional `layer`, `files`,
    numbers it actually reports: `<subagent_tokens>` or `<total_tokens>` →
    `total_tokens`; `<input_tokens>` → `input_tokens`; `<output_tokens>` →
    `output_tokens`; `<duration_ms>` → `duration_ms`. Anything absent is
-   `null`. The `model` field is the config model id the agent was
+   `null`. The `model` field is the workflow file's model id the agent was
    dispatched with (the usage block's model line, when present, must agree).
    A foreground result carries its own numbers; a background agent's result
    is its task-notification. A launch acknowledgement is not a result.
    NEVER estimate or invent a count, and never hold the next dispatch to
    wait for one — record nulls, backfill with `usage` later.
-2. With a layer: ensure it, set `cursor.current_layer` to it, set its
-   `coder` to `"done"` when the agent is `coder`, union `tests_written` into
+2. With a layer: ensure it, `cursor.current_layer` becomes it, its
+   `coder` becomes `"done"` when the agent is `coder`, union `tests_written` into
    `tests.written` and `tests_passed` into `tests.passed`.
 3. Union `files` into `files_touched`.
 4. Append a dispatch entry (all fields of the table in section 2, `finished`
@@ -235,24 +235,24 @@ Inputs: `agent`, optional `layer`, the usage block or numbers. *Requires a phase
 
 Inputs: `agent`, `verdict` (`pass` or `fail`), optional `layer`. *Requires a phase.*
 
-1. Read config `review.scope` (default `phase`).
+1. Read `review.scope` from the workflow file (default `phase`).
 2. Scope `layer`: a layer is mandatory, otherwise stop with
    `error: review.scope is 'layer' — gate needs a layer`; ensure the layer
-   and set `cursor.layers.<layer>.gates.<agent>` to the verdict.
-3. Scope `phase`: set `cursor.phase_gates.<agent>` to the verdict.
+   and `cursor.layers.<layer>.gates.<agent>` becomes the verdict.
+3. Scope `phase`: `cursor.phase_gates.<agent>` becomes the verdict.
 
 A verdict overwrites the previous one for that agent; a re-run of a failed
-gate simply sets it again.
+gate simply records it again.
 
 ### rollback — reconciliation moved the cursor back
 
 Inputs: `layer`, `to` (`coder-pending` or `tests-pending`). *Requires a phase.*
 
 1. Ensure the layer.
-2. `coder-pending`: set its `coder` to `"pending"` and `tests` to
-   `{"written": [], "passed": []}`. `tests-pending`: set `tests.passed` to
-   `[]` and leave `written` and `coder` alone.
-3. Set `cursor.current_layer` to the layer.
+2. `coder-pending`: its `coder` becomes `"pending"` and `tests` becomes
+   `{"written": [], "passed": []}`. `tests-pending`: `tests.passed` becomes
+   `[]`; `written` and `coder` stay as they are.
+3. `cursor.current_layer` becomes the layer.
 4. Reset EVERY gate to `"pending"`: each key of `cursor.phase_gates` and each
    key of every layer's `gates`. A verdict on a diff that has since changed
    is not a verdict.
@@ -277,8 +277,8 @@ error. No phase required.
   `asked_by` and a null `outcome`, change nothing (one entry per question,
   never a duplicate). Otherwise append
   `{"question": <text>, "asked_by": <cmd>, "outcome": null}`.
-- **Resolve:** find the first entry with this `asked_by` and set its
-  `outcome` in place. None → stop with
+- **Resolve:** find the first entry with this `asked_by`; its
+  `outcome` becomes the given value, in place. None → stop with
   `error: no deferred question asked_by '<cmd>'`. Never append a second entry.
 
 ### tracker — sync bookkeeping
@@ -314,21 +314,21 @@ for the key.
 
 Inputs: optional `gates` list. *Requires a phase.*
 
-1. Set `phase.status` to `"complete"` and `phase.completed` to now.
-2. Set `pending_gates` to the given list, or to the implementation default
+1. `phase.status` becomes `"complete"` and `phase.completed` becomes now.
+2. `pending_gates` becomes the given list, or the implementation default
    `["run-verify_full", "git-per-level", "next-phase-approval"]`.
    `/cfm:diagnose` passes `["plan-fix"]`, since a diagnosis leaves no diff.
 
 ### abandon — close the phase without a result
 
-*Requires a phase.* Set `phase.status` to `"abandoned"` and
-`phase.completed` to now. `pending_gates` and everything else stay as they
+*Requires a phase.* `phase.status` becomes `"abandoned"` and
+`phase.completed` becomes now. `pending_gates` and everything else stay as they
 are; a later `init` resets them.
 
 ## 4. Validation rules
 
 Run these over the whole document after every mutation and in doctor
-check 9. Each line is the exact error text. Roster checks (marked *config*)
+check 9. Each line is the exact error text. Roster checks (marked *roster*)
 apply only when `.cfm-workflow.yml` loads: layer names come from
 `layers[].name`, agent names from the keys of `agents`.
 
@@ -344,16 +344,16 @@ apply only when `.cfm-workflow.yml` loads: layer names come from
 | status complete/abandoned and `phase.completed` not a string | `phase.completed: must be set when status is <status>` |
 | `cursor` present but not an object | `cursor: must be an object` |
 | `cursor.layers` present but not an object | `cursor.layers: must be an object` |
-| layer name not in config (*config*) | `cursor.layers.<name>: no layer named '<name>' in config` |
+| layer name not in the workflow file (*roster*) | `cursor.layers.<name>: no layer named '<name>' in config` |
 | a layer is not an object | `cursor.layers.<name>: must be an object` |
 | `coder` not pending/dispatched/done | `cursor.layers.<name>.coder: <value> is not one of ['pending', 'dispatched', 'done']` |
 | `tests` not `{written: string[], passed: string[]}` | `cursor.layers.<name>.tests: must be {written: [..], passed: [..]}` |
 | layer `gates` present but not an object | `cursor.layers.<name>.gates: must be an object` |
-| gate agent not in config (*config*) | `cursor.layers.<name>.gates.<agent>: no agent named '<agent>' in config` |
+| gate agent not in the workflow file (*roster*) | `cursor.layers.<name>.gates.<agent>: no agent named '<agent>' in config` |
 | gate verdict not pending/pass/fail | `cursor.layers.<name>.gates.<agent>: <value> is not one of ['pending', 'pass', 'fail']` |
 | `current_layer` set and not a key of `cursor.layers` | `cursor.current_layer: '<value>' is not in cursor.layers` |
 | `phase_gates` present but not an object | `cursor.phase_gates: must be an object` |
-| phase-gate agent not in config (*config*) | `cursor.phase_gates.<agent>: no agent named '<agent>' in config` |
+| phase-gate agent not in the workflow file (*roster*) | `cursor.phase_gates.<agent>: no agent named '<agent>' in config` |
 | phase-gate verdict not pending/pass/fail | `cursor.phase_gates.<agent>: <value> is not one of ['pending', 'pass', 'fail']` |
 | `files_touched`, `open_questions`, `carried_forward` or `pending_gates` present and not a list of strings | `<field>: must be a list of strings` |
 | `deferred_questions` present but not a list | `deferred_questions: must be a list` |
