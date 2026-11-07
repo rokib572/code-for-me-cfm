@@ -283,6 +283,12 @@ error. No phase required.
 
 ### tracker — sync bookkeeping
 
+This section records which project tracker (Jira, ClickUp, Trello, or a
+user-connected one) the plan phases are mirrored to, and which tracker
+task each phase maps to. It configures nothing: no tool, no package
+source, no server. It is a bookmark so a fresh session can find the
+right task again.
+
 Inputs: optional `provider`, `last_sync` outcome text, `bind` pairs. No
 phase required. When the `tracker` object is absent, it starts as
 `{"provider": null, "last_sync": null, "tasks": {}}`.

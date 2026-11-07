@@ -102,9 +102,10 @@ each glob `G`: `Bash(H W)` where `W` is the Bash wildcard of `G`:
 So `Bash(cat *.env*)`, `Bash(head *.pem)`, `Bash(source *.env*)`,
 `Bash(tail *credentials)`, and so on — six heads times every glob. The
 head list is deliberately short; every extra head is one more rule per
-glob. The matcher has no carve-outs: `cat .env.example` is denied here
+glob. The matcher has no carve-outs: printing `.env.example` is denied here
 as the Read rule already denies it; an agent that needs the example's
-variable names uses `grep '' .env.example`.
+variable names lists them with a pattern search that prints the names
+before `=` and nothing after.
 
 ### 3. Forbidden git and gh operations
 

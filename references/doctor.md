@@ -22,7 +22,8 @@ final run, compared).
 - Status per check: any failure → FAIL; else any warning → WARN; else PASS;
   a check that could not run → SKIP.
 - Never read a file that matches a `secret_globs` entry, in any check. The
-  secrets check inspects names, `.gitignore` lines and `.env.example` only.
+  secrets check inspects file names and `.gitignore` lines, and counts
+  `.env.example` lines without printing one.
 - Never run `verify_full`, `test_scoped`, or a `migrate_*` slot. Human-only
   and mutating slots are never executed by the doctor; templates cannot run
   without arguments.
@@ -308,15 +309,20 @@ Applies when `is_repo` or `env_files` is non-empty; otherwise note
 
 ### .env.example NAME= form
 
-Absent → note `.env.example absent — nothing to verify`. Present: read it
-(it is the one env-family file that is safe to open). Skip blank and `#`
-lines. For each other line, split on the first `=`:
+Absent → note `.env.example absent — nothing to verify`. Present: never
+open it and never print a line of it. Count only, with two pattern
+searches that output numbers, not content:
 
-- No `=` → failure `.env.example:<lineno>: line is not NAME= form (content
-  not shown)`. Never echo any part of the line; it could be a pasted token.
-- Non-blank value → failure `.env.example:<lineno>: '<NAME>' must be
-  'NAME=' with a blank value (value not shown)`. The name alone locates it.
-- Add `.env.example values blank` to verified.
+- lines that are neither blank, nor a comment, nor of the form `NAME=`
+  followed by nothing — one count; each → failure
+  `.env.example: <n> line(s) are not NAME= form (content not shown)`.
+- lines of the form `NAME=` followed by a non-blank value — one count;
+  each → failure `.env.example: <n> line(s) carry a value — the example
+  file lists names only (values not shown)`.
+- Both zero → add `.env.example values blank` to verified.
+
+Variable names are never listed in the report either; the counts locate
+the problem well enough, and the user fixes the file themselves.
 
 ### Tracked secrets
 
