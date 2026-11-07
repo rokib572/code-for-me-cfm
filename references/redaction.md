@@ -81,12 +81,10 @@ whitespace ignored) is one of:
    `required optional none null enabled disabled yes no on off basic
    bearer digest oauth oauth2 jwt hmac hs256 hs384 hs512 rs256 rs384
    rs512`.
-4. A bare variable reference `${NAME}` and nothing else. A reference
-   that carries a default after `:-` is a value and IS redacted.
-5. A plain number (`30`, `3600`, `1.5`) — UNLESS the key contains
+4. A plain number (`30`, `3600`, `1.5`) — UNLESS the key contains
    `password`, `passwd` or `pin` (any case): a numeric password or PIN
    is redacted.
-6. **Assignment and colon forms only:** the key's last word (the part
+5. **Assignment and colon forms only:** the key's last word (the part
    after the final `_`, `.` or `-`, or the whole key) says the value is a
    location, a name, a policy or a setting:
 
@@ -227,7 +225,6 @@ the pass, not caution:
   `auth_enabled: true`, `auth_timeout: 30`, `token_expiry_seconds: 3600`.
 - Setting literals as values: `"token_type": "Bearer"`,
   `auth: required`, `auth_method: oauth2`.
-- Bare variable references: `password: ${DB_VALUE}`, `db-password: ${DB_VALUE}`.
 - Prose with a mixed-case key word: `Secrets: never read them, even on
   request.`, `Password: is stored in the vault`, `The secretary approved
   the rollout schedule.`
