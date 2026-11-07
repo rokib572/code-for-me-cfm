@@ -17,6 +17,9 @@ Usage: python3 state.py [--project-dir DIR] <command> [options]
   record    --agent A --purpose TEXT --model M [--layer L] [--total N]
             [--input N] [--output N] [--duration-ms N] [--usage BLOCK] [--files F...]
             [--tests-written T...] [--tests-passed T...]
+  usage     --agent A [--layer L] [--usage BLOCK] [--total N] [--input N]
+            [--output N] [--duration-ms N]   backfill a recorded dispatch whose
+                                   usage arrived late (oldest null entry first)
   gate      --agent A --verdict pass|fail [--layer L]
   rollback  --layer L --to coder-pending|tests-pending
   carry     ITEM...
@@ -29,6 +32,8 @@ Usage: python3 state.py [--project-dir DIR] <command> [options]
                                 passes `plan-fix`, since it leaves no diff)
   abandon                       mark the phase abandoned
   report                        the phase-gate token chart (stacked bars), as markdown
+                                (first fills late usage from the session transcripts'
+                                task-notifications, adding runs never recorded)
 
 Every mutating command exits 1 and writes nothing when the resulting state
 would fail validation.
@@ -313,8 +318,7 @@ def _usage_tag(text, *tags):
     return None
 
 
-def cmd_record(state, args, config):
-    _require_phase(state)
+def _read_usage(args):
     # a background agent's usage arrives in its task-notification <usage>
     # block; explicit flags win over what it carries
     if args.usage:
@@ -322,6 +326,11 @@ def cmd_record(state, args, config):
             args.total = _usage_tag(args.usage, "subagent_tokens", "total_tokens")
         if args.duration_ms is None:
             args.duration_ms = _usage_tag(args.usage, "duration_ms")
+
+
+def cmd_record(state, args, config):
+    _require_phase(state)
+    _read_usage(args)
     if args.layer:
         layer = _layer(state, args.layer)
         state["cursor"]["current_layer"] = args.layer
@@ -339,6 +348,123 @@ def cmd_record(state, args, config):
     })
     if args.total is not None:
         tokens["phase_total"] = tokens.get("phase_total", 0) + args.total
+
+
+def cmd_usage(state, args, config):
+    """Fill in the usage of an already-recorded dispatch: the oldest entry
+    for this agent (and layer) still missing its total. Only null fields are
+    filled, so a reported number is never overwritten."""
+    _require_phase(state)
+    _read_usage(args)
+    if args.total is None:
+        raise SystemExit("error: usage needs a total (--usage with <subagent_tokens>, or --total)")
+    tokens = state.setdefault("tokens", {"phase_total": 0, "dispatches": []})
+    entry = next((d for d in tokens["dispatches"]
+                  if d.get("agent") == args.agent
+                  and (args.layer is None or d.get("layer") == args.layer)
+                  and d.get("total_tokens") is None), None)
+    if entry is None:
+        where = f" · {args.layer}" if args.layer else ""
+        raise SystemExit(f"error: no recorded {args.agent}{where} dispatch is missing usage")
+    for field, value in (("total_tokens", args.total), ("input_tokens", args.input),
+                         ("output_tokens", args.output), ("duration_ms", args.duration_ms)):
+        if entry.get(field) is None and value is not None:
+            entry[field] = value
+    tokens["phase_total"] = tokens.get("phase_total", 0) + args.total
+
+
+# --- transcript harvest ----------------------------------------------------
+# Claude Code writes every background agent's task-notification, with its
+# usage, into the session transcript. `report` reads them back, so a record
+# made before its notification landed (or never made) still gets its number.
+
+def _transcripts(project_dir):
+    base = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    folder = os.path.join(base, "projects", re.sub(r"[^A-Za-z0-9]", "-", project_dir))
+    try:
+        names = sorted(n for n in os.listdir(folder) if n.endswith(".jsonl"))
+    except OSError:
+        return []
+    return [os.path.join(folder, n) for n in names]
+
+
+def _read_json(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def harvest_runs(project_dir, since):
+    """Finished cfm agent runs since `since` (ISO), oldest first: one dict
+    per task-notification, with the agent named by its subagent meta."""
+    runs, launches = {}, {}
+    for path in _transcripts(project_dir):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                lines = fh.readlines()
+        except OSError:
+            continue
+        for line in lines:
+            if "agentId" not in line and "task-notification" not in line:
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            launch = row.get("toolUseResult")
+            if isinstance(launch, dict) and launch.get("agentId"):
+                launches[launch["agentId"]] = launch
+            note = row.get("attachment")
+            if not isinstance(note, dict) or note.get("commandMode") != "task-notification":
+                continue
+            usage = note.get("usage") or {}
+            task = re.search(r"<task-id>([^<]+)</task-id>", note.get("prompt") or "")
+            stamp = row.get("timestamp") or ""
+            if not task or not isinstance(usage.get("totalTokens"), int) \
+                    or stamp[:19] < since[:19]:
+                continue
+            meta = _read_json(os.path.join(path[:-len(".jsonl")], "subagents",
+                                           f"agent-{task.group(1)}.meta.json")) or {}
+            kind = meta.get("agentType") or ""
+            if kind.startswith("cfm:"):
+                runs[task.group(1)] = {
+                    "id": task.group(1), "agent": kind[len("cfm:"):], "stamp": stamp,
+                    "total": usage["totalTokens"], "duration_ms": usage.get("durationMs"),
+                }
+    for run in runs.values():
+        launch = launches.get(run["id"]) or {}
+        run["model"], run["purpose"] = launch.get("resolvedModel"), launch.get("description")
+    return sorted(runs.values(), key=lambda r: r["stamp"])
+
+
+def harvest(state, project_dir):
+    """Match each harvested run to the oldest unmatched entry for its agent,
+    filling only null fields; a run nothing recorded becomes its own entry."""
+    phase = state.get("phase") or {}
+    tokens = state.get("tokens")
+    if not phase.get("started") or not isinstance(tokens, dict):
+        return
+    dispatches = tokens["dispatches"]
+    claimed = {d.get("agent_id") for d in dispatches}
+    for run in harvest_runs(project_dir, phase["started"]):
+        if run["id"] in claimed:
+            continue
+        entry = next((d for d in dispatches
+                      if d.get("agent") == run["agent"] and not d.get("agent_id")), None)
+        if entry is None:
+            entry = {"agent": run["agent"], "model": run["model"], "layer": None,
+                     "purpose": run["purpose"] or "not recorded", "input_tokens": None,
+                     "output_tokens": None, "total_tokens": None, "duration_ms": None,
+                     "finished": run["stamp"][:19] + "Z"}
+            dispatches.append(entry)
+        entry["agent_id"] = run["id"]
+        for field, value in (("total_tokens", run["total"]),
+                             ("duration_ms", run["duration_ms"])):
+            if entry.get(field) is None and isinstance(value, int):
+                entry[field] = value
+    tokens["phase_total"] = sum(d.get("total_tokens") or 0 for d in dispatches)
 
 
 def cmd_gate(state, args, config):
@@ -492,14 +618,21 @@ def render_report(state):
     pad = max([len(label) for label in labels] + [len("Totals")])
     scale = max([d.get("total_tokens") or 0 for d in dispatches] + [0])
 
+    split = any(d.get(k) is not None for d in dispatches
+                for k in ("input_tokens", "output_tokens"))
+
     def detail(inp, out, total, marks=("", "", "")):
+        if not split:  # no split anywhere: the parenthetical would be all dashes
+            return f"{_human(total)}{marks[2]}"
         return (f"{_human(total)}{marks[2]}  "
                 f"(in {_human(inp)}{marks[0]} · out {_human(out)}{marks[1]})")
 
-    lines = ["```", f"{IN_BLOCK} input   {OUT_BLOCK} output   {UNKNOWN_BLOCK} split not reported", ""]
+    legend = (f"{IN_BLOCK} input   {OUT_BLOCK} output   {UNKNOWN_BLOCK} split not reported"
+              if split else f"{UNKNOWN_BLOCK} total (input/output split not reported)")
+    lines = ["```", legend, ""]
     for label, d in zip(labels, dispatches):
         inp, out, total = d.get("input_tokens"), d.get("output_tokens"), d.get("total_tokens")
-        info = detail(inp, out, total) if total is not None else "no token data"
+        info = detail(inp, out, total) if total is not None else "not reported"
         info += f"  {d.get('model') or '—'} · {_duration(d.get('duration_ms'))}"
         lines.append(f"{label.ljust(pad)}  {_padded_bar(inp, out, total, scale)}  {info}")
     phase = state.get("phase") or {}
@@ -512,10 +645,18 @@ def render_report(state):
                   for k in ("input_tokens", "output_tokens", "total_tokens"))
     total_bar = _padded_bar(sums["input_tokens"], sums["output_tokens"],
                             sums["total_tokens"], sums["total_tokens"])
+    missing = sum(1 for d in dispatches if d.get("total_tokens") is None)
+    if dispatches and missing == len(dispatches):
+        totals = "not reported"
+    else:
+        totals = detail(sums["input_tokens"], sums["output_tokens"], sums["total_tokens"], marks)
     lines.append("")
-    lines.append(f"{'Totals'.ljust(pad)}  {total_bar}  "
-                 f"{detail(sums['input_tokens'], sums['output_tokens'], sums['total_tokens'], marks)}"
+    lines.append(f"{'Totals'.ljust(pad)}  {total_bar}  {totals}"
                  f"  {len(dispatches)} dispatches · {wall}")
+    if missing:
+        lines.append("")
+        lines.append(f"\u26A0 {missing} of {len(dispatches)} dispatches have no usage — "
+                     "backfill with `state.py usage`")
     lines.append("```")
     return "\n".join(lines)
 
@@ -523,7 +664,7 @@ def render_report(state):
 # --- cli -------------------------------------------------------------------
 
 COMMANDS = {
-    "init": cmd_init, "dispatch": cmd_dispatch, "record": cmd_record,
+    "init": cmd_init, "dispatch": cmd_dispatch, "record": cmd_record, "usage": cmd_usage,
     "gate": cmd_gate, "rollback": cmd_rollback, "carry": cmd_carry,
     "question": cmd_question, "tracker": cmd_tracker, "note": cmd_note,
     "complete": cmd_complete, "abandon": cmd_abandon,
@@ -568,6 +709,16 @@ def build_parser():
     p.add_argument("--files", nargs="*", default=[])
     p.add_argument("--tests-written", nargs="*", default=[])
     p.add_argument("--tests-passed", nargs="*", default=[])
+
+    p = sub.add_parser("usage", help="backfill a recorded dispatch's late usage")
+    p.add_argument("--agent", required=True)
+    p.add_argument("--layer", default=None)
+    p.add_argument("--input", type=int, default=None)
+    p.add_argument("--output", type=int, default=None)
+    p.add_argument("--total", type=int, default=None)
+    p.add_argument("--duration-ms", type=int, default=None)
+    p.add_argument("--usage", default=None,
+                   help="the <usage> block from the agent's task-notification, verbatim")
 
     p = sub.add_parser("gate", help="record a review gate verdict")
     p.add_argument("--agent", required=True)
@@ -632,6 +783,10 @@ def main(argv=None):
             print(f"error: {rel}: {e}", file=sys.stderr)
         return 1 if errors else 0
     if args.command == "report":
+        before = copy.deepcopy(state)
+        harvest(state, project_dir)
+        if state != before and not validate_state(state, config)[0]:
+            save_state(path, state)
         print(render_report(state))
         return 0
 

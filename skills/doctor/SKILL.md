@@ -35,7 +35,7 @@ status:
 | 1 | schema & invariants |
 | 2 | paths |
 | 3 | commands |
-| 4 | roster coherence (incl. agent files vs config tools) |
+| 4 | roster coherence (incl. agent files vs config tools; project files still naming a disabled agent) |
 | 5 | models |
 | 6 | rules have teeth |
 | 7 | secrets hygiene (incl. settings denies present and none stale; sandbox status) |

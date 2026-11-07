@@ -50,8 +50,59 @@ class FixtureCases(ProjectCase):
         d = self.project(config=fixture("broken-roster.yml"))
         report = self.assert_unhealthy(d, 4)
         failures = check(report, 4)["failures"]
-        self.assertTrue(any("disabled" in f and "cannot gate" in f for f in failures))
         self.assertTrue(any("shared ownership" in f for f in failures))
+        self.assertFalse(any("mechanical-gate" in f for f in failures))
+
+    def test_disabled_agent_is_forgotten(self):
+        d = self.project(config=None)
+        write(os.path.join(d, ".cfm-workflow.yml"), read(VALID).replace(
+            "review_gates:\n  - code-reviewer\n",
+            "review_gates:\n  - [code-reviewer, mechanical-gate]\n  - mechanical-gate\n"
+        ).replace("\nreview_gates:", """
+  mechanical-gate:
+    enabled: false
+    purpose: "Runs the mechanical gates"
+    model: not-a-model-id
+    tier: mechanical
+    autonomy: auto
+    tools: [Read, Bash]
+    owns_commands: [lint]
+    layers: [ghost-layer]
+
+review_gates:""", 1))
+        config, errors, _ = cfm_config.load(d)
+        self.assertEqual(errors, [])
+        self.assertNotIn("mechanical-gate", config["agents"])
+        self.assertEqual(config["review_gates"], [["code-reviewer"]])
+        self.assert_healthy(d)
+
+    def test_references_to_disabled_agent_are_found(self):
+        d = self.project(config=None)
+        write(os.path.join(d, ".cfm-workflow.yml"), read(VALID).replace("\nreview_gates:", """
+  api-linter:
+    enabled: false
+    purpose: "Lints the API"
+    model: claude-haiku-5
+    tier: mechanical
+    autonomy: auto
+    tools: [Read]
+    owns_commands: []
+    layers: [api]
+
+review_gates:""", 1))
+        write(os.path.join(d, "CLAUDE.md"), "# guide\n\nRun api-linter after edits.\n")
+        write(os.path.join(d, ".claude/agents/api-linter.md"), "---\nname: api-linter\n---\n")
+        write(os.path.join(d, ".claude/skills/x/SKILL.md"), "Uses api-linter.\napi-linters is fine\n")
+        write(os.path.join(d, ".cfm-workflow.local.yml"), "agents:\n  api-linter:\n    model: x\n")
+        write(os.path.join(d, "docs/PROGRESS.md"), "api-linter shipped\n")  # history
+        proc = run("references.py", "--project-dir", d, "--json")
+        hits = {(h["path"], h["line"]) for h in json.loads(proc.stdout)["references"]}
+        self.assertEqual(hits, {("CLAUDE.md", 3), (".claude/agents/api-linter.md", None),
+                                (".claude/skills/x/SKILL.md", 1),
+                                (".cfm-workflow.local.yml", 2)})
+        report = self.assert_healthy(d)
+        self.assertTrue(any("still names disabled agent 'api-linter'" in w
+                            for w in check(report, 4)["warnings"]))
 
     def test_broken_implement(self):
         self.assert_unhealthy(self.project(config=fixture("broken-implement.yml")), 1)

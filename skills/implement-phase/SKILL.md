@@ -100,7 +100,9 @@ canonical anyway.
 
 Then build the dispatch plan: per layer (in the config's `layers` order),
 the agents to dispatch, their exact file scopes, and the `review_gates`
-that will run.
+that will run — all taken from the step 1 JSON, which carries ONLY
+enabled agents (the loader drops a disabled agent and its gates). A
+disabled agent appears nowhere in the plan, the run, or the report.
 
 What you present depends on config `implement.plan_gate` (default true):
 
@@ -170,6 +172,12 @@ dispatched by their PROJECT agent file, `.claude/agents/<name>.md`, which
 tool limits. If it is missing, stop and say so (the doctor fails on it);
 never fall back to a general subagent, which would carry every tool.
 
+**Disabled agents do not exist.** Only agents in the step 1 JSON take
+part. A step below whose agent is absent is skipped without comment: never
+handed to another agent, never done by the orchestrator, never counted
+against "done". Never read `.cfm-workflow.yml` directly to find agents —
+the raw file still lists the disabled ones.
+
 For each layer, in order:
 
 1. **Dispatch the coder** (agent `coder`, model from config
@@ -187,15 +195,21 @@ For each layer, in order:
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent coder --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --files <every path it touched>
    ```
 
-   A background agent's numbers arrive only in its **task-notification**,
-   as a `<usage>` block (`<subagent_tokens>`, `<duration_ms>`) — not in the
-   launch result and not in its handback message. Wait for that
-   notification, then pass the block verbatim as `--usage` (or its numbers
-   as `--total`/`--duration-ms`; a foreground result's `total_tokens`
-   counts too). Pass only numbers the platform actually reported — omit a
-   flag rather than estimate it (the ledger stores null and the report
-   marks the total with "+"). Then report tokens to the user.
-2. **Dispatch e2e-test** to write and run tests for that layer's work —
+   Record the moment the agent's result is in hand, from what came with
+   it: a foreground result carries its own usage (`total_tokens`, duration
+   — pass them as `--total`/`--duration-ms`); a background agent's result
+   IS its **task-notification**, whose `<usage>` block (`<subagent_tokens>`,
+   `<duration_ms>`) you pass verbatim as `--usage`. A background LAUNCH
+   acknowledgement ("agent launched in background") is not a result —
+   record when the notification lands, not at launch. If the handback has
+   no numbers, run `record` without the token flags — the ledger stores
+   null and the report marks the total with "+"; when the usage turns up
+   later, backfill that entry with
+   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" usage --agent <name> --layer <layer> --usage '<usage>…</usage>'`.
+   Pass only numbers the platform actually reported; never estimate.
+   **Never end the turn or hold the next dispatch to wait for usage
+   numbers** — record once, backfill when it arrives, and continue.
+2. **Dispatch e2e-test** (only when it is in the roster) to write and run tests for that layer's work —
    scoped to its own new test files via `commands.test_scoped`. The brief
    carries the phase's **seams** verbatim from the plan (the public
    boundaries the tests observe behavior from) plus the resolved absolute
@@ -205,7 +219,8 @@ For each layer, in order:
    receive briefs as text, so an unexpanded `${CLAUDE_PLUGIN_ROOT}` reaches
    them literally and the Read fails. A plan with no seams line predates
    this field: derive the seams with the user at step 3 and record them in
-   the brief. After its task-notification arrives:
+   the brief. After it finishes (usage exactly as for the coder — never a
+   wait):
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent e2e-test --layer <layer> --purpose "<one line>" --model <config model id> --usage '<usage>…</usage>' --tests-written <paths> --tests-passed <paths>
@@ -230,7 +245,12 @@ FAIL**: re-dispatch the coder with the reviewer's raw actionable output
 Repeat until green or the same finding fails twice — two identical
 failures mean a plan problem: stop and consult the user. Record each gate
 verdict as it lands: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" gate --agent <reviewer> --verdict pass|fail`
-(add `--layer <layer>` under `review.scope: layer`).
+(add `--layer <layer>` under `review.scope: layer`). Every reviewer
+dispatch — re-runs and the mechanical-gate included — is also a token
+entry, recorded exactly like the coder's:
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" record --agent <reviewer> --purpose "review: <scope>" --model <config model id> --usage '<usage>…</usage>'`
+(plus `--layer <layer>` under `review.scope: layer`), so the chart's
+Totals cover the reviews too.
 
 ## Step 7 — the phase gate (always stop here)
 
@@ -248,6 +268,13 @@ verdict as it lands: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project
    b. **Token usage chart** — the output of
       `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project-dir "$(pwd)" report`, pasted verbatim, fenced block included (run it AFTER item 3
       below marks the phase complete, so the wall-clock time is final).
+      `report` backfills on its own: it reads every cfm agent's
+      task-notification from the session transcripts on disk, fills the
+      entries recorded before their usage landed, and adds any run that
+      was never recorded. A "⚠ N of M dispatches have no usage" line that
+      survives means a foreground result carried numbers you did not pass —
+      `usage` them and re-run `report`; never replace the chart with a
+      hand-summed figure.
       One colored stacked bar per dispatch (🟦 input, 🟧 output, ⬜ split
       not reported), re-dispatches as separate bars, a Totals bar over the
       non-null values with "+" marking a sum that had a null in it.
@@ -302,4 +329,7 @@ verdict as it lands: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/state.py" --project
   or Write-tool JSON, which the doctor's check 9 would reject.
 - Token reporting is mandatory after every dispatch when config
   `token_reporting` is true: "dispatch: <agent>(<layer>) — <n> tokens;
-  phase total: <sum>".
+  phase total: <sum>" (or "— tokens not reported" when none came back).
+- Missing token numbers never pause the run: record nulls, dispatch the
+  next layer, and backfill with `usage` when the numbers arrive. Ending
+  the turn to "wait for usage" is a stall, not a step.

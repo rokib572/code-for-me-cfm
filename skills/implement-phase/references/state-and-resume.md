@@ -23,6 +23,8 @@ file is being rejected).
 | phase starts | `init --id <id> --description "<text>" --layers <a> <b> [--plan <path>]` |
 | dispatch sent | `dispatch --agent <name> --layer <layer>` |
 | dispatch result | `record --agent <name> --layer <layer> --purpose "<text>" --model <id> [--usage BLOCK] [--total N --input N --output N --duration-ms N] [--files ...] [--tests-written ...] [--tests-passed ...]` |
+| late usage (backfill) | `usage --agent <name> [--layer <layer>] --usage BLOCK` (or `--total N [--duration-ms N]`) — fills the oldest entry for that agent/layer still missing its total; never overwrites |
+| phase-gate chart | `report` — first harvests late task-notification usage from the session transcripts (fills nulls, adds unrecorded runs, never overwrites), then prints the chart |
 | gate verdict | `gate --agent <reviewer> --verdict pass\|fail [--layer <layer>]` |
 | reconciliation rollback | `rollback --layer <layer> --to coder-pending\|tests-pending` |
 | deferred obligation | `carry "<text>" ...` |
@@ -105,9 +107,15 @@ token entry) · `gate` · `complete`. A crash between boundaries loses at
 most one step, and reconciliation catches even that.
 
 `record` takes only the token and duration numbers the platform ACTUALLY
-returned for that subagent. For a background agent those arrive in its
-task-notification's `<usage>` block — record after that notification, not
-on the handback message, and pass the block as `--usage`. When a field is not reported (e.g. the
+returned for that subagent, recorded as soon as its result arrives. A
+background agent's result is its task-notification, which carries the
+`<usage>` block — pass it as `--usage`; a foreground result carries its own
+usage. A background launch acknowledgement is not a result: record when
+the notification lands. Missing numbers mean null, never a wait for a later
+notification — `report` reads the notifications back from the session
+transcripts and fills the entry (`usage` does the same by hand); reviewer
+dispatches are recorded the same way, so the chart covers the reviews.
+When a field is not reported (e.g. the
 input/output split), omit the flag — the ledger stores `null` and
 `report` marks the affected total with "+". NEVER estimate or invent
 counts.
@@ -123,9 +131,10 @@ BEFORE continuing — the ledger is a claim, not a fact:
    (adopt the stray changes into the phase, or exclude them) before going on.
 2. **Parse check.** For every file in `files_touched` that still exists:
    dispatch the mechanical-gate to run the `typecheck` slot (or `lint` if
-   no typecheck). FAIL → the claimed-done work isn't done.
+   no typecheck). No enabled mechanical-gate → skip this check. FAIL → the claimed-done work isn't done.
 3. **Test check.** Re-run the state's `tests.passed` files via
-   `commands.test_scoped` (dispatch e2e-test with exactly those paths).
+   `commands.test_scoped` (dispatch e2e-test with exactly those paths). No enabled e2e-test →
+   skip this check.
    A test the ledger says passed that now fails is a rollback trigger.
 4. **Roll back on mismatch.** Move the cursor BACK to the last step all
    three checks verify: a layer with failing tests →

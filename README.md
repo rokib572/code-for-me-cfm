@@ -4,10 +4,10 @@
 
 # cfm: Code For Me
 
-[![version](https://img.shields.io/badge/cfm-1.0.4-blue)](.claude-plugin/plugin.json)
+[![version](https://img.shields.io/badge/cfm-1.0.5-blue)](.claude-plugin/plugin.json)
 [![license](https://img.shields.io/badge/license-MIT-green)](#license)
 [![requires](https://img.shields.io/badge/requires-Claude_Code-8A2BE2)](https://code.claude.com)
-[![tests](https://img.shields.io/badge/tests-182_offline-brightgreen)](tests/)
+[![tests](https://img.shields.io/badge/tests-188_offline-brightgreen)](tests/)
 
 **[Documentation](#install-in-30-seconds)** · **[Commands](#commands)** · **[Privacy](PRIVACY.md)** · **[Connectors](CONNECTORS.md)** · **[License](#license)**
 
@@ -179,6 +179,7 @@ Commands are **user-invoked**: you type them. Reference skills are **model-invok
 | **[`/cfm:connect-tracker`](skills/connect-tracker/SKILL.md)** | Integrates Jira, ClickUp, Trello, or a custom MCP URL; connects the server, sets provider + sync flags via a YAML diff and doctor run |
 | **[`/cfm:status`](skills/status/SKILL.md)** | Pure read of workflow state: mode, phase, pipeline cursor, pending gates, carried-forward debts |
 | **[`/cfm:mode`](skills/mode/SKILL.md)** `[enforced\|advisory\|off]` | Shows or changes cfm mode (the orchestrator-only rule the guard enforces on the main session) as a one-line diff and a doctor run |
+| **[`/cfm:upgrade`](skills/upgrade/SKILL.md)** | After a plugin update or repo change: sweeps config schema, retired and defaulted keys, new roster agents, live model ids, packages and scripts the config misses, a full CLAUDE.md re-render, settings denies, scaffold, and custom agent files; each change a diff you approve, ending in a doctor run against the baseline |
 | **[`/cfm:doctor`](skills/doctor/SKILL.md)** | Validates config ↔ repo ↔ agents ↔ models ↔ environment coherence (checks 0–9) |
 
 ### Reference skills (model-invoked)
@@ -301,7 +302,7 @@ On a greenfield project, `/cfm:plan` asks once, right after the first plan is ap
 For contributors working on cfm itself. The offline suite makes no model calls and is how you know an edit did not break the guard, the doctor, or the ledger.
 
 ```
-tests/run-tests.sh                 # 182 offline tests: guard, doctor, ledger, scaffold, settings, redaction
+tests/run-tests.sh                 # 188 offline tests: guard, doctor, ledger, scaffold, settings, redaction
 python3 -m unittest tests/test_guard.py -v
 python3 benchmarks/run.py          # behavior probes; spends tokens; see benchmarks/README.md
 python3 docs/screenshots/render.py # re-render the README screenshots

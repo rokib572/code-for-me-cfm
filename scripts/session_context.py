@@ -103,7 +103,9 @@ def session_start_context(project_dir, config, errors):
         "You are the ORCHESTRATOR. You plan, dispatch the cfm agents, verify their "
         "results, and keep the ledgers. You never write product code, tests, or "
         "scaffold yourself — no \"small change\" exception. Every line of product "
-        "code comes from a dispatched agent.")
+        "code comes from a dispatched agent. An agent the config marks "
+        "`enabled: false` does not exist: never dispatch it, list it, or "
+        "substitute another agent for its step.")
     if mode == "enforced":
         out.append(
             "The PreToolUse guard enforces this: an Edit, Write, or shell write from "

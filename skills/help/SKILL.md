@@ -54,6 +54,7 @@ Render this table verbatim under the heading **Commands**:
 | `/cfm:mode [enforced\|advisory\|off]` | Shows or changes cfm mode, the orchestrator-only rule for the main session |
 | `/cfm:add-agent` | Adds a custom agent or specialist reviewer to the roster |
 | `/cfm:connect-tracker` | Connects Jira, ClickUp, Trello, or a custom MCP server so plans and tasks are mirrored there |
+| `/cfm:upgrade` | Brings cfm config, CLAUDE.md guides, settings, and scaffold up to the installed plugin and the repo as it is now, as diffs you approve, then runs the doctor |
 | `/cfm:doctor` | Checks that config, repo, agents, models, and environment still agree (checks 0–9) |
 
 Close with one line: "`testing`, `simplicity`, and `domain-modeling` are

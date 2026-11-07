@@ -106,6 +106,26 @@ class Scaffold(ProjectCase):
         self.assertFalse(os.path.exists(steal))
         self.assertRegex(proc.stdout + proc.stderr, r"\.gitignore.*symlink")
 
+    def test_replace_rerenders_only_named_guides(self):
+        d = self.bare("rr")
+        self.render(d)
+        root, rules = os.path.join(d, "CLAUDE.md"), os.path.join(d, ".claude/rules/rules.md")
+        rendered = read(root)
+        write(root, rendered + "hand-written\n")
+        write(rules, read(rules) + "hand-written\n")
+        printed = self.render(d, "--print", "CLAUDE.md")
+        self.assertEqual(printed.stdout, rendered)
+        self.assertIn("hand-written", read(root))  # --print writes nothing
+        self.assertEqual(self.render(d, "--replace", "CLAUDE.md").returncode, 0)
+        self.assertEqual(read(root), rendered)
+        # only CLAUDE.md guides may be replaced — never the rules or ledgers
+        self.assertEqual(self.render(d, "--replace", ".claude/rules/rules.md").returncode, 1)
+        self.assertIn("hand-written", read(rules))
+        os.remove(root)
+        os.symlink(rules, root)
+        self.assertEqual(self.render(d, "--replace", "CLAUDE.md").returncode, 1)
+        self.assertIn("hand-written", read(rules))
+
     def test_disabled_agent_owns_nothing(self):
         cfg = yaml.safe_load(read(VALID))
         cfg["agents"]["extra-linter"] = {

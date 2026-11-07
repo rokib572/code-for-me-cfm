@@ -22,6 +22,7 @@ import agent_file
 import cfm_config
 import gen_settings
 import guard_check
+import references
 import state as state_mod
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -352,18 +353,6 @@ def check_4_roster(check, project_dir, config):
                 f"it can never activate"
             )
 
-    gates = config.get("review_gates")
-    flat = []
-    for entry in gates if isinstance(gates, list) else []:
-        flat.extend(entry if isinstance(entry, list) else [entry])
-    for gate in flat:
-        # unknown agents are check-1 failures; disabled ones are pipeline rot
-        if gate in agents and agents[gate].get("enabled") is not True:
-            check.failures.append(
-                f"review_gates: '{gate}' is disabled — a disabled agent "
-                f"cannot gate the pipeline"
-            )
-
     # only ENABLED agents contribute ownership — a disabled agent runs
     # nothing, so counting it manufactures phantom conflicts
     owners = {}
@@ -398,9 +387,18 @@ def check_4_roster(check, project_dir, config):
                 f"violates the single-owner matrix — reassign, or acknowledge "
                 f"via shared_commands_ack: [{slot}]"
             )
+    # the loader already dropped disabled agents; prose that still names
+    # one would steer a reader (or an agent) back to it
+    raw = cfm_config._read_yaml(os.path.join(project_dir, cfm_config.CONFIG_FILE), [])
+    for hit in references.stale_references(project_dir, raw or {}):
+        where = hit["path"] + (f":{hit['line']}" if hit["line"] else "")
+        check.warnings.append(
+            f"{where} still names disabled agent '{hit['agent']}' — remove "
+            f"the reference (/cfm:upgrade or /cfm:configure sweeps them)"
+        )
     if not check.failures and not check.warnings:
         check.notes.append(
-            "layers resolve, review gates enabled, single-owner matrix clean"
+            "layers resolve, single-owner matrix clean"
         )
 
 

@@ -50,12 +50,14 @@ say there is nothing to review and STOP.
 
 Scope on automatic triggers: when this skill fires from a phase-gate,
 on-stop, or pre-commit context (not a direct user request), honor config
-`review.auto_scope` — `fast` = dispatch code-reviewer only; `full` = the
-whole pipeline.
+`review.auto_scope` — `fast` = dispatch code-reviewer only (the first
+gate when code-reviewer is not enabled); `full` = the whole pipeline.
 
 ## Step 3 — run the pipeline
 
-Dispatch the agents exactly in the config's `review_gates` order — a
+The step 1 JSON carries only enabled agents and drops a disabled agent's
+gates, so a disabled reviewer never runs and is never reported. Dispatch
+the agents exactly in that JSON's `review_gates` order — a
 nested list is one parallel step (dispatch those agents concurrently);
 the order is the config's, never your own. Model per agent from config
 `agents.<name>.model`, passed to the Agent tool as its alias (`fable` /
@@ -81,7 +83,9 @@ Gate semantics in a review context:
 
 - Verdict per gate (PASS/FAIL).
 - Findings ordered by severity, each with `file:line`.
-- Token usage per dispatch when config `token_reporting` is true.
+- Token usage per dispatch when config `token_reporting` is true — taken
+  from each reviewer's result as it lands ("tokens not reported" when none
+  came back); never end the turn to wait for usage numbers.
 
 ## Step 5 — mark reviewed
 

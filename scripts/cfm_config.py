@@ -259,6 +259,22 @@ def slot_commands(config, slot):
     return []
 
 
+def without_agents(gates, names):
+    """review_gates minus the named agents; a parallel group left empty
+    disappears with them."""
+    if not isinstance(gates, list):
+        return gates
+    kept = []
+    for entry in gates:
+        if isinstance(entry, list):
+            entry = [g for g in entry if g not in names]
+            if entry:
+                kept.append(entry)
+        elif entry not in names:
+            kept.append(entry)
+    return kept
+
+
 def load(project_dir):
     """Load, merge, and validate config.
 
@@ -321,6 +337,16 @@ def load(project_dir):
                 f"(extendable, never shrinkable — hard invariant): {omitted}"
             )
     config["secret_globs"] = list(dict.fromkeys(listed + DEFAULT_SECRET_GLOBS))
+
+    # A disabled agent is not part of the workflow at all: dropped here, with
+    # its review gates, so no consumer can dispatch, validate, or count it.
+    agents = config.get("agents")
+    if isinstance(agents, dict):
+        disabled = {name for name, agent in agents.items()
+                    if isinstance(agent, dict) and agent.get("enabled") is False}
+        if disabled:
+            config["agents"] = {n: a for n, a in agents.items() if n not in disabled}
+            config["review_gates"] = without_agents(config.get("review_gates"), disabled)
 
     validate(config, errors, warnings)
     return config, errors, warnings

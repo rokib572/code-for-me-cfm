@@ -1,5 +1,6 @@
-# Breaks doctor check #4: review gate references a disabled agent, and two
-# agents share owns_commands: [lint] without a shared_commands_ack entry.
+# Breaks doctor check #4: two agents share owns_commands: [lint] without a
+# shared_commands_ack entry. The disabled mechanical-gate in review_gates is
+# NOT a failure — the loader drops disabled agents and their gates.
 cfm:
   schema_version: 2
   requires:

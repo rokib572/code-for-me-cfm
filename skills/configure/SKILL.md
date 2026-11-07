@@ -130,6 +130,29 @@ enforcement. These are hard invariants; no profile or argument unlocks them.
    personal status line inside this project only; `--remove-statusline`
    retracts cfm's and never the user's own. Offer it once when it is off.
 
+## Step 5 — sweep what a deactivation leaves behind
+
+When the applied change disables an agent (`enabled: false`), the loader
+already drops it from every flow. Its NAME can still sit in project prose.
+Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/references.py" --project-dir "$(pwd)" --json` and, for every hit, propose its removal as one
+diff per file, applied only on approval:
+
+- CLAUDE.md guides, the glossary, `.claude/` skills, commands, and rules:
+  delete the sentence, bullet, or table row that names the agent, and
+  reword what is left only as far as grammar needs.
+- A rule in `rules_file` whose `**Enforcement:**` names the agent: never
+  delete the enforcement. Reassign the owner through the conventions
+  round, because a rule needs teeth.
+- `.cfm-workflow.local.yml` overrides for the agent: delete that block.
+- A disabled custom agent's own file (`line` null): offer to delete
+  `.claude/agents/<name>.md`. Re-enabling regenerates it.
+- The progress log, plans, and state are history and are never scanned
+  or edited.
+
+The agent's entry in `.cfm-workflow.yml` stays, so re-enabling it is a
+one-line change. Then re-run the doctor. Check 4 warns on any reference
+still left.
+
 ## Hard limits
 
 - Never apply without showing the diff and getting approval — even for

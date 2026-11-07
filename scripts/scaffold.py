@@ -10,8 +10,12 @@ Nothing in this script names a package manager, framework, or language.
 Existing files are NEVER clobbered: they are left untouched and reported
 as "kept" (no --force flag, by design). The one exception is .gitignore,
 which is append-only: existing lines are never removed or reordered.
+The single sanctioned overwrite is --replace, which re-renders CLAUDE.md
+guides the user named after approving their diff (/cfm:upgrade).
 
 Usage: python3 scaffold.py [--project-dir DIR] [--dry-run] [--date YYYY-MM-DD]
+       python3 scaffold.py [--project-dir DIR] --print PATH
+       python3 scaffold.py [--project-dir DIR] --replace PATH [PATH ...]
 Exit code: 0 rendered (warnings allowed), 1 config invalid or bad flags.
 """
 
@@ -365,6 +369,32 @@ def gitignore_missing(config, path):
     return missing
 
 
+def rerender(project_dir, guides, print_path, replace):
+    """--print: one guide's rendering to stdout. --replace: overwrite the
+    named EXISTING guides with their rendering, never through a symlink."""
+    for rel in [print_path] if print_path else replace:
+        if _norm(rel) not in guides:
+            print(f"error: {rel} is not a CLAUDE.md guide the config renders "
+                  f"(guides: {', '.join(sorted(guides))})", file=sys.stderr)
+            return 1
+    if print_path:
+        sys.stdout.write(guides[_norm(print_path)])
+        return 0
+    for rel in replace:
+        path = os.path.join(project_dir, _norm(rel))
+        if not os.path.isfile(path) or os.path.islink(path) \
+                or not _contained(project_dir, path):
+            print(f"error: {rel} — not an existing regular file inside the "
+                  f"project — not replaced", file=sys.stderr)
+            return 1
+        tmp = f"{path}.cfm-tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(guides[_norm(rel)])
+        os.replace(tmp, path)
+        print(f"  replaced    {_norm(rel)}")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="cfm scaffold — render workflow files from .cfm-workflow.yml"
@@ -374,6 +404,11 @@ def main(argv=None):
                         help="list what would be written and why; write nothing")
     parser.add_argument("--date", default=None,
                         help="YYYY-MM-DD for the initial progress entry (default: today)")
+    rewrite = parser.add_mutually_exclusive_group()
+    rewrite.add_argument("--print", dest="print_path", metavar="PATH",
+                         help="print one CLAUDE.md guide's rendering; write nothing")
+    rewrite.add_argument("--replace", nargs="+", metavar="PATH",
+                         help="re-render these existing CLAUDE.md guides in place")
     args = parser.parse_args(argv)
 
     if args.date:
@@ -398,6 +433,10 @@ def main(argv=None):
         return 1
 
     warnings = []
+    if args.print_path or args.replace:
+        guides = {_norm(rel): content for rel, content, _ in plan(config, date, warnings)
+                  if os.path.basename(rel) == "CLAUDE.md"}
+        return rerender(project_dir, guides, args.print_path, args.replace)
     written, kept, blocked = [], [], []
     for rel, content, reason in plan(config, date, warnings):
         path = os.path.join(project_dir, rel)
