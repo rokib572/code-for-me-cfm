@@ -284,7 +284,7 @@ known to exist today, flag any that no longer resolves, suggest
 
 Keep a `verified` list of what actually ran so the success note never
 overclaims. `is_repo` = `.git` exists. `env_files` = top-level entries
-starting with `.env` (`ls -A | grep '^\.env'`).
+whose name starts with `.env` (names only, never opened).
 
 ### .gitignore env-family coverage
 

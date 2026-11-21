@@ -272,9 +272,8 @@ Offer once, in `/cfm:init`, `/cfm:configure` and `/cfm:code-review`;
 include it in every later run while it is on, so its entries follow the
 config. It enables Claude Code's Bash sandbox in the PROJECT settings:
 the operating system then enforces the paths on the running process and
-its children, which closes the interpreter (`python3 -c "open('.env')"`),
-variable (`f=.env; cat $f`) and script-file evasions the text rules
-concede.
+its children, which closes the interpreter, shell-variable and
+script-file evasions the text rules concede.
 
 Block to merge into `.claude/settings.json`:
 
@@ -353,8 +352,8 @@ sidecar.
 
 ## Limits to state when asked
 
-- Text rules only: recursive readers that never name the file
-  (`grep -r SECRET .`, `find . -exec cat {} +`, `xargs cat`, `tar`) pass;
+- Text rules only: a recursive search or an archiver that never names
+  the file passes;
   symlinks are not resolved. The sandbox is the answer, not more rules.
 - The orchestrator-only rule has no settings shape: the permission
   layer cannot see which agent is calling.
